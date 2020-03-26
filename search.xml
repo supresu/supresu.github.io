@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>B树，B+树及LSM树对比</title>
+    <url>/2020/03/22/btree_b+tree_lsm/</url>
+    <content><![CDATA[<p>对开发人员来说熟悉数据库是一项非常重要的技能，为了保证数据库的性能 B树、B+树、LSM树广泛应用在了各种数据库产品中。<code>B树</code>和<code>B+树</code>一般应用于文件存储系统以及数据库系统中，如我们非常常见的 Mysql InnoDB 引擎就是采用了B+树实现的索引结构；<code>LSM树</code>则在诸如 <a href="http://hbase.apache.org/" target="_blank" rel="noopener">Apache HBase</a>、<a href="https://cassandra.apache.org/" target="_blank" rel="noopener">Apache Cassandra</a>、<a href="https://blog.csdn.net/baijiwei/article/details/80506121" target="_blank" rel="noopener">MongoDB 的 Wired Tiger 存储引擎</a>、<a href="https://blog.csdn.net/Double2hao/article/details/90107904" target="_blank" rel="noopener">LevelDB</a>、<a href="https://rocksdb.org.cn/" target="_blank" rel="noopener">RocksDB</a>、<a href="https://pingcap.com/index.html" target="_blank" rel="noopener">TiDB</a> 等产品中都有应用。</p>
+<a id="more"></a>
+
+<hr>
+<h2 id="B树"><a href="#B树" class="headerlink" title="B树"></a>B树</h2><p>全称 Balance-tree（平衡多路查找树），<code>平衡</code> 的意思是左边和右边分布均匀；<code>多路</code>的意思是相对于二叉树而言的，二叉树就是二路查找树，查找时只有两条路，而 B树 有多条路，即父节点有多个子节点。</p>
+<p>B树是为磁盘或其它直接存取的辅助存储设备而设计的一种平衡搜索树，它类似于红黑树，但它在降低磁盘 I/O 操作上更好。</p>
+<h3 id="结构特点"><a href="#结构特点" class="headerlink" title="结构特点"></a>结构特点</h3><p>名词介绍</p>
+<blockquote>
+<ul>
+<li><strong>阶</strong>：一棵 m 阶 B-tree，每个结点至多可以拥有 m 个子结点，即遍观整棵树，子节点最多的个数是 m，那么这棵树就是 m 阶树。</li>
+<li><strong>度</strong>：树的度就是树的高度，即树的层数。</li>
+</ul>
+</blockquote>
+<h4 id="特性"><a href="#特性" class="headerlink" title="特性"></a>特性</h4><ul>
+<li>根节点至少有两个子节点</li>
+<li>每个中间节点都包含 k-1 个数据和 k 个孩子，其中 m/2 &lt;= k &lt;= m</li>
+<li>每个叶子节点都包含 k-1 个数据，其中 m/2 &lt;= k &lt;= m</li>
+<li>所有的叶子结点都位于同一层</li>
+<li>每个节点中的数据都按照从小到大的顺序排列，每个数据左子树中的所有数据都小于它，而右子树中的所有数据都大于它</li>
+</ul>
+<p><img src="/images/20200322/B-tree.png" alt="b-tree"></p>
+<h3 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h3><p>优点：</p>
+<ul>
+<li>使用层次化的索引来最小化磁盘读取</li>
+<li>使用不完全填充的块来加速插入和删除</li>
+<li>通过优雅的遍历算法来保持索引平衡</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>每个节点中既要存索引信息，又要存其对应的数据，如果数据很大，那么当树的体量很大时，每次读到内存中的树的信息就会不太够</li>
+<li>B树遍历整个树的过程和二叉树本质上是一样的，B树相对二叉树虽然提高了磁盘IO性能，但并没有解决遍历元素效率低下的问题</li>
+</ul>
+<hr>
+<h2 id="B-树"><a href="#B-树" class="headerlink" title="B+树"></a>B+树</h2><p>B树的变体，它把所有的数据都存储在叶节点中，中间节点只存放 <code>关键字</code> 和 <code>子节点指针</code>，因此最大化了中间节点的分支因子，所以B+树的遍历也更加高效(<code>B树需要以中序的方式遍历节点，而B+树只需把所有叶子节点串成链表就可以从头到尾遍历</code>)。</p>
+<h3 id="结构特点-1"><a href="#结构特点-1" class="headerlink" title="结构特点"></a>结构特点</h3><p>一棵 B+ 树需要满足以下条件：</p>
+<ul>
+<li>节点的子树数和关键字数相同</li>
+<li>节点的关键字表示的是子树中的最大数，在子树中同样含有这个数据</li>
+<li>叶子节点包含了全部数据，同时符合左小右大的顺序</li>
+</ul>
+<p><img src="/images/20200322/Bplustree.png" alt="Bplustree"></p>
+<h3 id="优缺点-1"><a href="#优缺点-1" class="headerlink" title="优缺点"></a>优缺点</h3><p>优点：</p>
+<ul>
+<li>中间节点不包含数据，同样大小的磁盘页可以容纳更多的节点元素，这就意味着在数据量相同的情况下，B+树更加的矮胖，因此IO的次数也就较少</li>
+<li>B+树查询必须查找到叶子节点，每一次查找都是稳定的</li>
+<li>所有叶子节点形成有序链表，便于范围查询，远远高于B树</li>
+</ul>
+<p>缺点：<br>在一些情况下会产生大量的随机IO，如</p>
+<ul>
+<li>主键不是有序递增的，导致每次插入数据产生大量的数据迁移和空间碎片</li>
+<li>使主键是有序递增的，大量写请求的分布仍是随机的</li>
+</ul>
+<hr>
+<h2 id="LSM-树"><a href="#LSM-树" class="headerlink" title="LSM 树"></a>LSM 树</h2><p>即日志结构合并树(Log-Structured Merge-Tree)，传统关系型数据库使用b树或一些变体作为存储结构，能高效进行查找。但保存在磁盘中时它也有一个明显的缺陷，那就是逻辑上相离很近但物理却可能相隔很远，这就可能造成大量的磁盘随机读写。随机读写比顺序读写慢很多，为了提升IO性能，我们需要一种能将随机操作变为顺序操作的机制，于是便有了 LSM 树。<code>LSM 树能让我们进行顺序写磁盘，从而大幅提升写操作，作为代价的是牺牲了一些读性能</code>。</p>
+<h3 id="结构特点-2"><a href="#结构特点-2" class="headerlink" title="结构特点"></a>结构特点</h3><p>LSM 树使用两部分类树的数据结构存储数据，并同时提供查询。其中一部分数据结构（C0）存于内存中（memtable），<code>负责接受新的数据插入、更新及查询的请求，并直接在内存中对数据进行排序</code>；另一部分数据结构（C1）存于硬盘上，由 C0 写入磁盘（sstable）而成，<code>主要提供读的操作，特点是有序且不会被修改</code>；LSM 树会使用日志文件（commit log）来为<code>数据恢复</code>提供保障。</p>
+<img src="/images/20200322/LSM.jpg" width="300px" align=center>
+
+<p>三类数据结构的协作顺序是：<code>所有新插入和更新操作先被记录到 commit log，最后达到一定条件时会从 memtable 写入 sstable，并抛弃相关的 log 数据</code>；</p>
+<h3 id="优缺点-2"><a href="#优缺点-2" class="headerlink" title="优缺点"></a>优缺点</h3><p>这种数据结构的特点：非常适合数据的快速写入，但不利于读，因此 LSM 树采用了以下策略：</p>
+<ul>
+<li>定期将硬盘上小的 sstable 合并（Merge）成大的 sstable，以减少 sstable 数量，合并时也会将重复的操作或合并或更新去重</li>
+<li>对每个 sstable 使用布隆过滤器（Bloom filter），以加速对数据在该 sstable 的存在性进行判定，从而减少数据查询的总时间</li>
+</ul>
+<p>WTable 为58同城基于 RocksDB 实现的一个高性能 Key Value 存储平台，针对 LSM 树的 Compaction 问题做了一些优化，详情可以阅读《<a href="https://tech.58.com/#/article?id=27" target="_blank" rel="noopener">58同城RocksDB使用技巧之分布式存储扩容演进</a>》。</p>
+<p>字节跳动内部大量的数据库产品（如图数据库、NewSQL 等）都构建在 RocksDB 之上，也对 RocksDB 存储引擎做了几方面的改进，详情可以阅读《[字节跳动在 RocksDB 存储引擎上的改进实践]》(<a href="https://www.toutiao.com/i6806261982442816013/?tt_from=weixin&amp;utm_campaign=client_share&amp;wxshare_count=1&amp;timestamp=1585061583&amp;app=news_article&amp;utm_source=weixin&amp;utm_medium=toutiao_android&amp;req_id=202003242253030101300371380A1BEEC8&amp;group_id=6806261982442816013" target="_blank" rel="noopener">https://www.toutiao.com/i6806261982442816013/?tt_from=weixin&amp;utm_campaign=client_share&amp;wxshare_count=1&amp;timestamp=1585061583&amp;app=news_article&amp;utm_source=weixin&amp;utm_medium=toutiao_android&amp;req_id=202003242253030101300371380A1BEEC8&amp;group_id=6806261982442816013</a>)</p>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><blockquote>
+<p><a href="https://www.zhihu.com/question/19887265" target="_blank" rel="noopener">https://www.zhihu.com/question/19887265</a><br><a href="https://www.jianshu.com/p/3fb899684392" target="_blank" rel="noopener">https://www.jianshu.com/p/3fb899684392</a><br><a href="https://blog.csdn.net/u010916338/article/details/86134334" target="_blank" rel="noopener">https://blog.csdn.net/u010916338/article/details/86134334</a><br><a href="https://zh.wikipedia.org/wiki/B%E6%A0%91" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/B%E6%A0%91</a><br><a href="https://zh.wikipedia.org/wiki/B%2B%E6%A0%91" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/B%2B%E6%A0%91</a><br><a href="https://www.cnblogs.com/nullzx/p/8729425.html" target="_blank" rel="noopener">https://www.cnblogs.com/nullzx/p/8729425.html</a><br><a href="https://blog.csdn.net/yangguosb/article/details/81903583" target="_blank" rel="noopener">https://blog.csdn.net/yangguosb/article/details/81903583</a></p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>数据结构</category>
+        <category>数据库</category>
+      </categories>
+      <tags>
+        <tag>B树</tag>
+        <tag>B+树</tag>
+        <tag>LSM树</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>程序猫炸炸</title>
+    <url>/2020/03/19/zhazha_read_code/</url>
+    <content><![CDATA[<p>炸炸化身程序猫，这是要给我找 BUG 吗 😂</p>
+<a id="more"></a>
+
+<div id="dplayer0" class="dplayer hexo-tag-dplayer-mark" style="margin-bottom: 20px; height:450px;"></div><script>(function(){var player = new DPlayer({"container":document.getElementById("dplayer0"),"autoplay":true,"video":{"url":"/video/zhazha_video_01.mp4"}});window.dplayers||(window.dplayers=[]);window.dplayers.push(player);})()</script>]]></content>
+      <categories>
+        <category>炸炸</category>
+      </categories>
+      <tags>
+        <tag>炸炸</tag>
+        <tag>视频</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Chrome 80 带来的 Cookie 新策略 SameSite 是什么？</title>
+    <url>/2020/03/11/chrome_samesite/</url>
+    <content><![CDATA[<p>2020年2月4日谷歌正式宣布了 Chrome 80 稳定版的到来，值得关注的<a href="https://www.bleepingcomputer.com/news/google/chrome-80-released-with-56-security-fixes-cookie-changes-more/?__cf_chl_jschl_tk__=bf60ebcbcc1329f5a908209b354f6d1db3ec73e8-1584753774-0-AftLNYItNWkE3mlPUgL-2Sl2ckSAVfmk5JwcGmabsGeSIr1ab0p8dpHtq-ih-S1-1tse5FrxLufVGtQ1zMw7XBIfg49-Y8UkYsDMEypnRnZZEOk1pwQoaaOYQB6dEgl_V2yZE2RctP-J2HrqPoFNOrkOr9rAblTE4XinPrMlB_zA-pIoZAqZbrsSvJ6S76cv50M0a3EZk6BRJMo0jhBDL0Yw1KnHK_A6WraKF_0gQAEnvufRW0yBVcw_7YVFlUGzTr-dDzd9QLvnGSuPG6ko6g1rYLRZN2yURaF-Ae_pLdcyavgwiAkmWowk3BC2jZQWfkBE0BreIx39ynlPNrjVAI9hm-B9AOH7ECcQ7IubdcvXk5XvuWL4hPNXxM1RkdMo-w" target="_blank" rel="noopener">主要更新</a>如下：</p>
+<ul>
+<li>引入全新的 cookie 分类模型 SameSite</li>
+<li>静默通知</li>
+<li>将所有混合音频和视频资源自动升级为 HTTPS</li>
+<li>移除对 FTP 的支持</li>
+<li>标签分组，每组可配置个性化颜色</li>
+<li>支持 SVG 格式的图像，进一步降低站点资源占用</li>
+<li>上线联系人选取和内容索引 API</li>
+</ul>
+<p>新的版本进一步加强了安全性等，对 cookie 的校验策略也更加严格…</p>
+<a id="more"></a>
+
+<hr>
+<h2 id="Cookie-策略调整"><a href="#Cookie-策略调整" class="headerlink" title="Cookie 策略调整"></a>Cookie 策略调整</h2><p>简单来说，在 Chrome 80 中，Chrome 会将没有声明 SameSite 值的 cookie 默认设置为 <code>SameSite=Lax</code>，只有采用 <code>SameSite=None; Secure</code> 设置的 cookie 可以从外部访问，前提是通过安全连接（即 HTTPS）访问。</p>
+<h2 id="SameSite"><a href="#SameSite" class="headerlink" title="SameSite"></a>SameSite</h2><p>Chrome 51 开始，浏览器的 Cookie 新增加了一个 SameSite 属性，用来防止 CSRF 攻击和用户追踪，它可以设置三个值：</p>
+<ul>
+<li>Strict</li>
+<li>Lax</li>
+<li>None</li>
+</ul>
+<h3 id="Strict"><a href="#Strict" class="headerlink" title="Strict"></a>Strict</h3><p>完全禁止第三方 Cookie，跨站点时，任何情况下都不会发送 Cookie。</p>
+<h3 id="Lax"><a href="#Lax" class="headerlink" title="Lax"></a>Lax</h3><p>大多数情况也是不发送第三方 Cookie，但是导航到目标网址的 Get 请求除外，导航到目标网址的 GET 请求，只包括三种情况：链接，预加载请求，GET 表单。详见下表：</p>
+<table>
+<thead>
+<tr>
+<th>请求类型</th>
+<th>示例</th>
+<th>Lax</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>链接</td>
+<td><code>html &lt;a href=&quot;...&quot;&gt;&lt;/a&gt;</code></td>
+<td>发送 Cookie</td>
+</tr>
+<tr>
+<td>预加载</td>
+<td><code>html &lt;link rel=&quot;prerender&quot; href=&quot;...&quot;/&gt;</code></td>
+<td>发送 Cookie</td>
+</tr>
+<tr>
+<td>GET 表单</td>
+<td><code>html &lt;form method=&quot;GET&quot; action=&quot;...&quot;&gt;</code></td>
+<td>发送 Cookie</td>
+</tr>
+<tr>
+<td>POST 表单</td>
+<td><code>html &lt;form method=&quot;POST&quot; action=&quot;...&quot;&gt;</code></td>
+<td>不发送</td>
+</tr>
+<tr>
+<td>iframe</td>
+<td><code>html &lt;iframe src=&quot;...&quot;&gt;&lt;/iframe&gt;</code></td>
+<td>不发送</td>
+</tr>
+<tr>
+<td>AJAX</td>
+<td><code>html $.get(&quot;...&quot;)</code></td>
+<td>不发送</td>
+</tr>
+<tr>
+<td>Image</td>
+<td><code>html &lt;img src=&quot;...&quot;&gt;</code></td>
+<td>不发送</td>
+</tr>
+</tbody></table>
+<p>在 chrome 80 中，Chrome 会将没有声明 SameSite 值的 cookie 默认设置为 <code>SameSite=Lax</code>（以前默认值为 <code>SameSite=None</code>），对基于 <code>POST 表单</code>、<code>iframe</code>、<code>AJAX</code>、<code>Image</code> 方式的跨站请求将会出现因无法携带 cookie 而导致网站无法正常打开的问题。</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><h3 id="方式一：配置-chrome"><a href="#方式一：配置-chrome" class="headerlink" title="方式一：配置 chrome"></a>方式一：配置 chrome</h3><ol>
+<li>浏览器里输入 <a href="chrome://flags/">chrome://flags/</a></li>
+<li>查找 same-site-by-default-cookies 设置项，设置为 disabled<br><img src="/images/chrome-samesite.png" alt="same-site-by-default-cookies"></li>
+</ol>
+<h3 id="方式二：配置-chrome"><a href="#方式二：配置-chrome" class="headerlink" title="方式二：配置 chrome"></a>方式二：配置 chrome</h3><p>开发者网站的 cookie 需要设置 <code>SameSite=None; Secure</code>，同时网站域名需要基于 https。</p>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><blockquote>
+<p><a href="https://www.oschina.net/news/113190/chrome-80-stable-released" target="_blank" rel="noopener">https://www.oschina.net/news/113190/chrome-80-stable-released</a><br><a href="https://baijiahao.baidu.com/s?id=1657599977359683459&wfr=spider&for=pc" target="_blank" rel="noopener">https://baijiahao.baidu.com/s?id=1657599977359683459&amp;wfr=spider&amp;for=pc</a><br><a href="https://www.chromestatus.com/features/schedule" target="_blank" rel="noopener">https://www.chromestatus.com/features/schedule</a><br><a href="http://www.ruanyifeng.com/blog/2019/09/cookie-samesite.html" target="_blank" rel="noopener">http://www.ruanyifeng.com/blog/2019/09/cookie-samesite.html</a></p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>浏览器</category>
+      </categories>
+      <tags>
+        <tag>cookie</tag>
+        <tag>chrome</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>普吉岛6日游</title>
+    <url>/2020/01/24/journey_%20phuket/</url>
+    <content><![CDATA[<p>忙碌了一年，趁着假期享受一下传说中的阳光、海水、沙滩 🌞🌊🏖︎</p>
+<a id="more"></a>
+
+<h2 id="行程"><a href="#行程" class="headerlink" title="行程"></a>行程</h2><p>普吉岛 Kingpower 免税店、西蒙人妖秀、珊瑚岛、皇帝岛、椰树岛海滩度假村、包车环岛一日游</p>
+<h2 id="感受"><a href="#感受" class="headerlink" title="感受"></a>感受</h2><p>海岛很美，水很蓝，沙子特别软，阳光足；人妖秀远远超出了预期，一定要体验。</p>
+<p><img src="/images/phuket/01.jpeg" alt="01"><br><img src="/images/phuket/02.jpeg" alt="02"><br><img src="/images/phuket/03.jpeg" alt="03"><br><img src="/images/phuket/04.jpeg" alt="04"></p>
+]]></content>
+      <categories>
+        <category>旅行</category>
+      </categories>
+      <tags>
+        <tag>普吉岛</tag>
+        <tag>泰国</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis vs Memcached</title>
+    <url>/2019/02/20/redis_vs_memcached/</url>
+    <content><![CDATA[<p>redis 和 memcached 作为两款非常优秀的 kv 存储系统经常会被拿来比较，除了我们最常提起的 redis 支持更多数据类型（字符串、哈希表、链表、集合、有序集合）外它们之间还有什么区别呢？本文将从 <code>内存管理</code>、<code>数据结构</code>、<code>淘汰算法</code>、<code>过期策略</code>、<code>网络IO模型</code>、<code>线程模型</code>、<code>持久化</code>、<code>虚拟内存</code>、<code>高可用</code> 等方面详细介绍。</p>
+<a id="more"></a>
+
+<hr>
+<h2 id="☞-内存管理器"><a href="#☞-内存管理器" class="headerlink" title="☞ 内存管理器"></a>☞ 内存管理器</h2><h3 id="Memcached"><a href="#Memcached" class="headerlink" title="Memcached"></a>Memcached</h3><p>Memcached 默认情况下采用了名为 <code>Slab Allocator</code>（对象缓存分配） 的机制分配、管理内存，可以有效解决内存碎片的问题。</p>
+<p>Slab Allocator 的基本原理是按照预先规定的大小，将分配的内存以 <code>page</code> 为单位（默认情况下一个 page 是 1M，可以通过 -I 参数在启动时指定），分割成各种尺寸的 <code>chunk</code>（块）， 相同尺寸的块组成一个分组，即 <code>slab</code> （可以理解为 chunk 的集合）。</p>
+<img src="/images/redis_mc/168149AF31D13B84B64D47328EAFE211.jpg" width="400px" align=center>
+
+<blockquote>
+<p>如上图所示，&lt;= 88 byte 的数据均归属于 slab 1，&lt;= 112 byte 的数据均归属于 slab 2</p>
+</blockquote>
+<p>当需要申请内存时，memcached 会划分出一个新的 page 并基于数据的大小分配给指定的 <code>slab</code>，比如存储的数据大小 &lt;= 88 byte，则 page 会分配给 slab 1，该 slab 新增的 chunk 数量为 $1M / 88byte$。</p>
+<img src="/images/redis_mc/BDEF68BBFE9BAADDB8070E26FFBFA599.jpg" width="500px" align=center>
+
+<img src="/images/redis_mc/C357A7E26D57A1876666C9E9CA5B42D1.jpg" width="500px" align=center>
+
+<blockquote>
+<p>page 一旦被分配在重启前不会被回收或者重新分配，以解决内存碎片问题</p>
+</blockquote>
+<h3 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h3><p>Linux 平台默认内存管理器为 <code>jemalloc</code>，其它平台为 <code>libc malloc</code>，下文为 redis 官方的介绍：</p>
+<blockquote>
+<p>Selecting a non-default memory allocator when building Redis is done by setting the MALLOC environment variable. <code>Redis is compiled and linked against libc malloc by default, with the exception of jemalloc being the default on Linux systems</code>. This default was picked because jemalloc has proven to have fewer fragmentation problems than libc malloc.<br><br/><br>To force compiling against libc malloc, use:<br><br/><br>% make MALLOC=libc<br>To compile against jemalloc on Mac OS X systems, use:<br><br/><br>% make MALLOC=jemalloc</p>
+</blockquote>
+<p><a href="https://github.com/antirez/redis#allocator" target="_blank" rel="noopener">链接</a></p>
+<p>想了解 jemalloc，建议阅读 <a href="https://www.jianshu.com/p/f1988cc08dfd" target="_blank" rel="noopener">jemalloc 之 实现分析</a></p>
+<hr>
+<h2 id="☞-数据结构"><a href="#☞-数据结构" class="headerlink" title="☞ 数据结构"></a>☞ 数据结构</h2><h3 id="Memcached-1"><a href="#Memcached-1" class="headerlink" title="Memcached"></a>Memcached</h3><p>Memcached 维护一个巨大的 HashTable 用于通过 key 快速查询缓存数据</p>
+<img src="/images/redis_mc/5E0BBDC276FEFC9E3E059AEE0BA93AC0.jpg" width="600px" align=center>
+
+<p>Memcached 上存储的每一个元素都会有一个 item 的结构：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * Structure for storing items within memcached.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">stritem</span> &#123;</span></span><br><span class="line">  <span class="comment">/* Protected by LRU locks */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> _<span class="title">stritem</span> *<span class="title">next</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> _<span class="title">stritem</span> *<span class="title">prev</span>;</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment">/* Rest are protected by an item lock */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> _<span class="title">stritem</span> *<span class="title">h_next</span>;</span>    <span class="comment">/* hash chain next */</span></span><br><span class="line">  <span class="keyword">rel_time_t</span>      time;       <span class="comment">/* least recent access */</span></span><br><span class="line">  <span class="keyword">rel_time_t</span>      exptime;    <span class="comment">/* expire time */</span></span><br><span class="line">  <span class="keyword">int</span>             nbytes;     <span class="comment">/* size of data */</span></span><br><span class="line">  <span class="keyword">unsigned</span> short  refcount;</span><br><span class="line">  <span class="keyword">uint8_t</span>         nsuffix;    <span class="comment">/* length of flags-and-length string */</span></span><br><span class="line">  <span class="keyword">uint8_t</span>         it_flags;   <span class="comment">/* ITEM_* above */</span></span><br><span class="line">  <span class="keyword">uint8_t</span>         slabs_clsid;<span class="comment">/* which slab class we're in */</span></span><br><span class="line">  <span class="keyword">uint8_t</span>         nkey;       <span class="comment">/* key length, w/terminating null and padding */</span></span><br><span class="line">  <span class="comment">/* this odd type prevents type-punning issues when we do</span></span><br><span class="line"><span class="comment">    * the little shuffle to save space when not using CAS. */</span></span><br><span class="line">  <span class="keyword">union</span> &#123;</span><br><span class="line">    <span class="keyword">uint64_t</span> cas;</span><br><span class="line">    <span class="keyword">char</span> <span class="built_in">end</span>;</span><br><span class="line">  &#125; data[];</span><br><span class="line">  <span class="comment">/* if it_flags &amp; ITEM_CAS we have 8 bytes CAS */</span></span><br><span class="line">  <span class="comment">/* then null-terminated key */</span></span><br><span class="line">  <span class="comment">/* then " flags length\r\n" (no terminating null) */</span></span><br><span class="line">  <span class="comment">/* then data with terminating \r\n (no terminating null; it's binary!) */</span></span><br><span class="line">&#125; item;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>参考资料：<br><a href="https://blog.csdn.net/initphp/article/details/44537547" target="_blank" rel="noopener">https://blog.csdn.net/initphp/article/details/44537547</a></p>
+</blockquote>
+<h3 id="Redis-1"><a href="#Redis-1" class="headerlink" title="Redis"></a>Redis</h3><p>以 set hello world 为例，展示 redis 如何存储数据：</p>
+<img src="/images/redis_mc/FAAB924D7C8F278DA26EB5949765A196.jpg" width="400px" align=center>
+
+<ul>
+<li><strong>dictEntry</strong>: Redis 是 Key-Value 数据库，因此对每个键值对都会有一个 dictEntry，里面存储了指向 Key 和 Value 的指针；next 指向下一个 dictEntry，与本 Key-Value 无关</li>
+<li><strong>key</strong>: 图中右上角可见，Key（hello）并不是直接以字符串存储，而是存储在 SDS 结构中</li>
+<li><strong>redisObject</strong>: value 的数据结构，下面详细介绍</li>
+</ul>
+<h4 id="✔-redisObject-数据结构"><a href="#✔-redisObject-数据结构" class="headerlink" title="✔ redisObject 数据结构"></a>✔ redisObject 数据结构</h4><figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">redisObject</span> &#123;</span></span><br><span class="line">  <span class="keyword">unsigned</span> type:<span class="number">4</span>;</span><br><span class="line">  <span class="keyword">unsigned</span> encoding:<span class="number">4</span>;</span><br><span class="line">  <span class="keyword">unsigned</span> lru:LRU_BITS; <span class="comment">/* LRU time (relative to global lru_clock) or</span></span><br><span class="line"><span class="comment">                          * LFU data (least significant 8 bits frequency</span></span><br><span class="line"><span class="comment">                          * and most significant 16 bits access time). */</span></span><br><span class="line">  <span class="keyword">int</span> refcount;</span><br><span class="line">  <span class="keyword">void</span> *ptr;</span><br><span class="line">&#125; robj;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>type</strong>: 表示对象的类型，目前包括 REDIS_STRING(字符串)、REDIS_LIST (列表)、REDIS_HASH(哈希)、REDIS_SET(集合)、REDIS_ZSET(有序集合)</li>
+<li><strong>encoding</strong>: 对象的内部编码，<strong>对于 Redis 支持的每种类型，都有至少两种内部编码</strong>，例如对于字符串，有 int、embstr、raw 三种编码（后面详细介绍）</li>
+<li><strong>lru</strong>: 记录的是对象最后一次被命令程序访问的时间</li>
+<li><strong>refcount</strong>: 记录的是该对象被引用的次数，主要在于对象的引用计数和内存回收</li>
+<li><strong>ptr</strong>: 指针指向具体的数据</li>
+</ul>
+<h4 id="✔-SDS"><a href="#✔-SDS" class="headerlink" title="✔ SDS"></a>✔ SDS</h4><p>Redis 没有直接使用 C 字符串(即以空字符’\0’结尾的字符数组)作为默认的字符串表示，而是使用了 SDS。SDS 是简单动态字符串(Simple Dynamic String)的缩写。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span> &#123;</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> len;   <span class="comment">//表示sds当前的长度</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="built_in">free</span>;  <span class="comment">//已为sds分配的长度-sds当前的长度</span></span><br><span class="line">  <span class="keyword">char</span> buf[];         <span class="comment">//sds实际存放的位置</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>SDS 与 C 字符串的比较:</p>
+<ul>
+<li><strong>获取字符串长度</strong>：SDS 是 O(1)，C 字符串是 O(n)</li>
+<li><strong>缓冲区溢出</strong>：使用 C 字符串的 API 时，如果字符串长度增加（如 strcat 操作）而忘记重新分配内存，很容易造成缓冲区的溢出；而 SDS 由于记录了长度，相应的 API 在可能造成缓冲区溢出时会自动重新分配内存，杜绝了缓冲区溢出</li>
+<li><strong>修改字符串时内存的重分配</strong>：对于 C 字符串，如果要修改字符串，必须要重新分配内存（先释放再申请），因为如果没有重新分配，字符串长度增大时会造成内存缓冲区溢出，字符串长度减小时会造成内存泄露。而对于 SDS，由于可以记录 len 和 free，因此解除了字符串长度和空间数组长度之间的关联，可以在此基础上进行优化。如空间预分配策略（即分配内存时比实际需要的多）使得字符串长度增大时重新分配内存的概率大大减小；惰性空间释放策略使得字符串长度减小时重新分配内存的概率大大减小。</li>
+<li><strong>存取二进制数据</strong>：SDS 可以，C 字符串不可以。因为 C 字符串以空字符作为字符串结束的标识，而对于一些二进制文件（如图片等）。内容可能包括空字符串，因此 C 字符串无法正确存取；而 SDS 以字符串长度 len 来作为字符串结束标识，因此没有这个问题。</li>
+</ul>
+<h4 id="✔-Encoding"><a href="#✔-Encoding" class="headerlink" title="✔ Encoding"></a>✔ Encoding</h4><ul>
+<li><p><strong>int</strong>：</p>
+</li>
+<li><p><strong>embstr</strong>：只分配一次内存空间（因此 redisObject 和 sds 是连续的）</p>
+</li>
+<li><p><strong>raw</strong>：分配两次内存空间（一次为 sds 分配对象，另一次为 objet 分配对象）</p>
+<img src="/images/redis_mc/071AC0120A55D4CE86C71BCCE07D32BC.jpg" width="500px" align=center></li>
+<li><p><strong>ziplist</strong>：是 Redis 为了节约内存而开发的，是由一系列特殊编码的连续内存块，总体思想是时间换空间，即以部分读写性能为代价，来换取极高的内存空间利用率。这种结构并不擅长做修改操作，一旦数据发生改动，就会引发内存 realloc。ziplist 只会用于字段个数少，且字段值也较小的场景</p>
+<img src="/images/redis_mc/WX20200321-172632@2x.png" width="400px" align=center></li>
+<li><p><strong>linkedlist</strong>：由一个 list 结构和多个 listNode 结构组成；典型结构如下图所示：</p>
+<img src="/images/redis_mc/D37C1920241705B298B4FF9E1F78D306.jpg" width="500px" align=center></li>
+<li><p><strong>hashtable</strong>：一个 hashtable 由 1 个 dict 结构、2 个 dictht 结构、1 个 dictEntry 指针数组（称为 bucket）和多个 dictEntry 结构组成</p>
+<img src="/images/redis_mc/AEEFF07D89EA2243B42ED37047DC02D6.jpg" width="500px" align=center></li>
+<li><p><strong>intset</strong>：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">intset</span> &#123;</span></span><br><span class="line">  <span class="keyword">uint32_t</span> encoding;</span><br><span class="line">  <span class="keyword">uint32_t</span> length;</span><br><span class="line">  <span class="keyword">int8_t</span> contents[];</span><br><span class="line">&#125; intset;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>encoding</strong>：redis 根据整型位数将 intset 分为 INTSET_ENC_INT16、INTSET_ENC_INT32、INTSET_ENC_INT64 三种编码</li>
+<li><strong>length</strong>：集合元素大小</li>
+<li><strong>contents</strong>：元素数组</li>
+</ul>
+</li>
+<li><p><strong>skiplist</strong>：<br>跳跃表是一种有序数据结构，通过在每个节点中维持多个指向其他节点的指针，从而达到快速访问节点的目的</p>
+<img src="/images/redis_mc/0948935EFD68F1624BAA1BCB3545BB18.jpg" width="500px" align=center></li>
+<li><p><strong>quicklist</strong>：<br>是一个 ziplist 组成的双向链表</p>
+<img src="/images/redis_mc/4E2CC5FA2CBC908A727A5ED54087E6C9.jpg" width="500px" align=center>
+
+<blockquote>
+<p>为什么不直接使用 ziplist？<br>ziplist 在我们程序里面来看将会是一块连续的内存块。它使用内存偏移来保存 next 从而节约了 next 指针。这样造成了我们每一次的删除插入操作都会进行 realloc，从而分配一块新的内存块。当我们的 ziplist 特别大的时候。没有这么大空闲的内存块给我们的时候。操作系统其实会抽象出一块连续的内存块给我。在底层来说他其实是一个链表链接成为的内存。不过在我们程序使用来说。他还是一块连续的内存。这样的话会造成内存碎片，并且在操作的时候因为内存不连续等原因造成效率问题。或者因为转移到大内存块等进行数据迁移。从而损失性能。所以 quicklist 是对 ziplist 进行一次封装，使用小块的 ziplist 来既保证了少使用内存，也保证了性能。</p>
+</blockquote>
+</li>
+</ul>
+<h4 id="✔-Redis-各类型数据结构"><a href="#✔-Redis-各类型数据结构" class="headerlink" title="✔ Redis 各类型数据结构"></a>✔ Redis 各类型数据结构</h4><ul>
+<li><strong>字符串</strong>: int（8 个字节的长整型），embstr（&lt;=39 字节的字符串），raw（大于 39 个字节的字符串）</li>
+<li><strong>列表</strong>：ziplist（列表中元素数量小于 512 个且列表中所有字符串对象都不足 64 字节），linkedlist（其它）。redis 3.2 后使用 quicklist 作为底层数据结构</li>
+<li><strong>哈希</strong>：ziplist（哈希中元素数量小于 512 个且哈希中所有键值对的键和值字符串长度都小于 64 字节），hashtable（其它）</li>
+<li><strong>集合</strong>：intset（集合中元素数量小于 512 个且集合中所有元素都是整数值），hashtable（其它）</li>
+<li><strong>有序集合</strong>：ziplist（有序集合中元素数量小于 128 个且有序集合中所有成员长度都不足 64 字节），skiplist（其它）</li>
+</ul>
+<hr>
+<h2 id="☞-淘汰算法"><a href="#☞-淘汰算法" class="headerlink" title="☞ 淘汰算法"></a>☞ 淘汰算法</h2><h3 id="Memcached-2"><a href="#Memcached-2" class="headerlink" title="Memcached"></a>Memcached</h3><p>LRU（Least recently used，最近最少使用）算法，根据数据的历史访问记录来进行淘汰数据，其核心思想是 “如果数据最近被访问过，那么将来被访问的几率也更高”。</p>
+<img src="/images/redis_mc/682155E1E9663D2FFC818C32DFF6F34B.jpg" align=center>
+
+<ul>
+<li>新数据插入到链表头部；</li>
+<li>每当缓存命中（即缓存数据被访问），则将数据移到链表头部；</li>
+<li>当链表满的时候，将链表尾部的数据丢弃。</li>
+</ul>
+<h3 id="Redis-2"><a href="#Redis-2" class="headerlink" title="Redis"></a>Redis</h3><p>LRU 近似算法，即随机选取 5 个 key，淘汰其中间隔时间最长的 key。Redis 4.0 后新增了 LFR 淘汰算法。</p>
+<p>LFR（Least frequently used，最不经常使用）如果一个数据在最近一段时间内使用次数很少，那么在将来一段时间内被使用的可能性也很小。</p>
+<blockquote>
+<p>参考资料<br><a href="https://redis.io/topics/lru-cache" target="_blank" rel="noopener">https://redis.io/topics/lru-cache</a><br><a href="https://zhuanlan.zhihu.com/p/24155554" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/24155554</a></p>
+</blockquote>
+<hr>
+<h2 id="☞-过期策略"><a href="#☞-过期策略" class="headerlink" title="☞ 过期策略"></a>☞ 过期策略</h2><h3 id="Memcached-3"><a href="#Memcached-3" class="headerlink" title="Memcached"></a>Memcached</h3><ul>
+<li>最大过期时间 30 天，超过 30 天的过期时间将转化为 unix 时间戳作为过期时间</li>
+<li>memcached 的过期数据不会立即从内存删除，而是读取的时候判断是否过期，过期则删除（<strong>惰性失效机制</strong>, lazyexpiration）</li>
+</ul>
+<blockquote>
+<p>参考资料<br><a href="https://github.com/memcached/memcached/wiki/Programming#expiration" target="_blank" rel="noopener">https://github.com/memcached/memcached/wiki/Programming#expiration</a></p>
+</blockquote>
+<h3 id="Redis-3"><a href="#Redis-3" class="headerlink" title="Redis"></a>Redis</h3><p>通过 <code>maxmemory-policy</code> 参数配置</p>
+<ul>
+<li><strong>noeviction</strong>：默认策略，不淘汰，如果内存已满，添加数据是报错</li>
+<li><strong>allkeys-lru</strong>：在所有 key 中，通过 <code>lru</code> 算法淘汰数据</li>
+<li><strong>volatile-lru</strong>：设置过期时间的 key 中，通过 <code>lru</code> 算法淘汰数据</li>
+<li><strong>allkeys-random</strong>：在所有 key 中，随机淘汰数据</li>
+<li><strong>volatile-random</strong>：设置过期时间的 key 中，随机淘汰数据</li>
+<li><strong>volatile-ttl</strong>：设置过期时间的 key 中，抛弃存活时间最短的数据</li>
+<li><strong>allkeys-lfu</strong>：在所有 key 中，通过 <code>lfu</code> 算法淘汰数据（4.0 版本后）</li>
+<li><strong>volatile-lfu</strong>：设置过期时间的 key 中，通过 <code>lfu</code> 算法淘汰数据（4.0 版本后）</li>
+</ul>
+<blockquote>
+<p>参考资料<br><a href="https://redis.io/topics/lru-cache" target="_blank" rel="noopener">https://redis.io/topics/lru-cache</a></p>
+</blockquote>
+<hr>
+<h2 id="☞-网络IO模型"><a href="#☞-网络IO模型" class="headerlink" title="☞ 网络IO模型"></a>☞ 网络IO模型</h2><h3 id="Memcached-4"><a href="#Memcached-4" class="headerlink" title="Memcached"></a>Memcached</h3><p>非阻塞 IO 多路复用。基于 <code>libevent</code> 开发，代码可读性差</p>
+<h3 id="Redis-4"><a href="#Redis-4" class="headerlink" title="Redis"></a>Redis</h3><p>非阻塞 IO 多路复用。自己完成了一个非常轻量级的对 <code>select</code>、<code>epoll</code>、<code>evport</code>、<code>kqueue</code> 这些通用的接口的实现，代码优雅，可读性强</p>
+<hr>
+<h2 id="☞-线程模型"><a href="#☞-线程模型" class="headerlink" title="☞ 线程模型"></a>☞ 线程模型</h2><h3 id="Memcached-5"><a href="#Memcached-5" class="headerlink" title="Memcached"></a>Memcached</h3><p>多线程</p>
+<p>优点：</p>
+<ul>
+<li>可以发挥多核的优势</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>处理逻辑复杂</li>
+<li>需要考虑线程与线程之间的同步与互斥，上下文切换和锁竞争会导致额外的性能消耗</li>
+</ul>
+<h3 id="Redis-5"><a href="#Redis-5" class="headerlink" title="Redis"></a>Redis</h3><p>单线程</p>
+<p>优点：</p>
+<ul>
+<li>处理逻辑简单</li>
+<li>避免了不必要的上下文切换和竞争条件</li>
+<li>容易实现更加丰富的功能</li>
+</ul>
+<p>缺点</p>
+<ul>
+<li>无法发挥多核的优势</li>
+<li>耗时的操作会造成严重的性能问题（如：redis 提供了一些简单的计算功能，比如排序、聚合等，对于这些操作，单线程模型施加会严重影响整体吞吐量，CPU 计算过程中，整个 IO 调度都是被阻塞的）</li>
+</ul>
+<blockquote>
+<p><a href="https://github.com/JohnSully/KeyDB" target="_blank" rel="noopener">KeyDB</a> 是从 Redis fork 出来的分支，专注于多线程、内存效率和高吞吐量；此外 redis 6.0 也引入了多线程 IO 特性</p>
+</blockquote>
+<hr>
+<h2 id="☞-持久化"><a href="#☞-持久化" class="headerlink" title="☞ 持久化"></a>☞ 持久化</h2><h3 id="Memcached-6"><a href="#Memcached-6" class="headerlink" title="Memcached"></a>Memcached</h3><p>无</p>
+<h3 id="Redis-6"><a href="#Redis-6" class="headerlink" title="Redis"></a>Redis</h3><p>RDB, AOF</p>
+<hr>
+<h2 id="☞-虚拟内存"><a href="#☞-虚拟内存" class="headerlink" title="☞ 虚拟内存"></a>☞ 虚拟内存</h2><h3 id="Memcached-7"><a href="#Memcached-7" class="headerlink" title="Memcached"></a>Memcached</h3><p>memcache 会把所有的数据存储在物理内存里</p>
+<h3 id="Redis-7"><a href="#Redis-7" class="headerlink" title="Redis"></a>Redis</h3><p>redis 有自己的 VM 机制，理论上能够存储比物理内存更多的数据，当数据超量时，会引发 swap，把冷数据刷到磁盘上。<strong>需要注意的是，从 2.6 版本开始，redis 已经废弃了 VM 机制。</strong></p>
+<blockquote>
+<p>参考资料：<br><a href="https://redis.io/topics/internals-vm" target="_blank" rel="noopener">https://redis.io/topics/internals-vm</a></p>
+</blockquote>
+<hr>
+<h2 id="☞-高可用"><a href="#☞-高可用" class="headerlink" title="☞ 高可用"></a>☞ 高可用</h2><h3 id="Memcached-8"><a href="#Memcached-8" class="headerlink" title="Memcached"></a>Memcached</h3><p>要想要实现高可用，需要进行二次开发，例如客户端的双读双写，或者服务端的集群同步</p>
+<h3 id="Redis-8"><a href="#Redis-8" class="headerlink" title="Redis"></a>Redis</h3><p>支持集群部署、主从复制、读写分离、数据分片等特性</p>
+<blockquote>
+<p>参考资料：<br>  <a href="https://redis.io/topics/cluster-tutorial" target="_blank" rel="noopener">https://redis.io/topics/cluster-tutorial</a><br>  <a href="https://yq.aliyun.com/articles/626532" target="_blank" rel="noopener">https://yq.aliyun.com/articles/626532</a></p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>缓存</category>
+      </categories>
+      <tags>
+        <tag>redis</tag>
+        <tag>memcached</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>通过Python绘制NBA球员投篮图表</title>
+    <url>/2015/08/29/create-NBA-shot-chart-in-pathon/</url>
+    <content><![CDATA[<p>喜欢看NBA的同学都见过官方绘制的球员投篮图表，这些图表能够非常直观地反映某个球员的投篮分布图以及投篮热图等。当然，借助NBA官方提供的数据，我们也可以自己绘制这些图表。</p>
+<p>只要有数据，能够绘这种图的工具有很多，鉴于最近在学习Python，而且刚好也有一位大牛写了一篇相关的文章<a href="http://savvastjortjoglou.com/nba-shot-sharts.html" target="_blank" rel="noopener">“How to Create NBA Shot Charts in Python”</a>，借鉴这篇文章，我也使用Python折腾了一把。</p>
+<a id="more"></a>
+
+<h3 id="运行环境"><a href="#运行环境" class="headerlink" title="运行环境"></a>运行环境</h3><ul>
+<li><p>操作系统</p>
+<p>  CentOS 6.7(32-bit)</p>
+</li>
+<li><p>Python版本</p>
+<p>  2.7.10</p>
+</li>
+</ul>
+<h3 id="第三方模块"><a href="#第三方模块" class="headerlink" title="第三方模块"></a>第三方模块</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line"><span class="keyword">import</span> seaborn <span class="keyword">as</span> sns</span><br></pre></td></tr></table></figure>
+
+<h3 id="绘制篮球场"><a href="#绘制篮球场" class="headerlink" title="绘制篮球场"></a>绘制篮球场</h3><p>绘制投篮图表时，我们需要以篮球场地作为参考标准，所以我们先要清楚的了解篮球场的尺寸（详见<a href="http://www.sportscourtdimensions.com/wp-content/uploads/2015/02/nba_court_dimensions_h.png" target="_blank" rel="noopener">1</a>和<a href="http://www.sportsknowhow.com/basketball/dimensions/nba-basketball-court-dimensions.html" target="_blank" rel="noopener">2</a>），然后使用Matplotlib Patches绘制<code>圆形</code>，<code>矩形</code>和<code>圆弧</code>，并组合成一个篮球场。绘制篮球场的函数实现如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> matplotlib.patches <span class="keyword">import</span> Circle, Rectangle, Arc</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">draw_court</span><span class="params">(ax=None, color=<span class="string">'gray'</span>, lw=<span class="number">1</span>, outer_lines=False)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Returns an axes with a basketball court drawn onto to it.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    This function draws a court based on the x and y-axis values that the NBA</span></span><br><span class="line"><span class="string">    stats API provides for the shot chart data.  For example, the NBA stat API</span></span><br><span class="line"><span class="string">    represents the center of the hoop at the (0,0) coordinate.  Twenty-two feet</span></span><br><span class="line"><span class="string">    from the left of the center of the hoop in is represented by the (-220,0)</span></span><br><span class="line"><span class="string">    coordinates.  So one foot equals +/-10 units on the x and y-axis.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    TODO: explain the parameters</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="keyword">if</span> ax <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        ax = plt.gca()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Create the various parts of an NBA basketball court</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># Create the basketball hoop</span></span><br><span class="line">    hoop = Circle((<span class="number">0</span>, <span class="number">0</span>), radius=<span class="number">7.5</span>, linewidth=lw, color=color, fill=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Create backboard</span></span><br><span class="line">    backboard = Rectangle((<span class="number">-30</span>, <span class="number">-7.5</span>), <span class="number">60</span>, <span class="number">-1</span>, linewidth=lw, color=color)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># The paint</span></span><br><span class="line">    <span class="comment"># Create the outer box 0f the paint, width=16ft, height=19ft</span></span><br><span class="line">    outer_box = Rectangle((<span class="number">-80</span>, <span class="number">-47.5</span>), <span class="number">160</span>, <span class="number">190</span>, linewidth=lw, color=color, fill=<span class="literal">False</span>)</span><br><span class="line">    <span class="comment"># Create the inner box of the paint, widt=12ft, height=19ft</span></span><br><span class="line">    inner_box = Rectangle((<span class="number">-60</span>, <span class="number">-47.5</span>), <span class="number">120</span>, <span class="number">190</span>, linewidth=lw, color=color, fill=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Create free throw top arc</span></span><br><span class="line">    top_free_throw = Arc((<span class="number">0</span>, <span class="number">142.5</span>), <span class="number">120</span>, <span class="number">120</span>, theta1=<span class="number">0</span>, theta2=<span class="number">180</span>, linewidth=lw, color=color, fill=<span class="literal">False</span>)</span><br><span class="line">    <span class="comment"># Create free throw bottom arc</span></span><br><span class="line">    bottom_free_throw = Arc((<span class="number">0</span>, <span class="number">142.5</span>), <span class="number">120</span>, <span class="number">120</span>, theta1=<span class="number">180</span>, theta2=<span class="number">0</span>, linewidth=lw, color=color, linestyle=<span class="string">'dashed'</span>)</span><br><span class="line">    <span class="comment"># Restricted Zone, it is an arc with 4ft radius from center of the hoop</span></span><br><span class="line">    restricted = Arc((<span class="number">0</span>, <span class="number">0</span>), <span class="number">80</span>, <span class="number">80</span>, theta1=<span class="number">0</span>, theta2=<span class="number">180</span>, linewidth=lw, color=color)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Three point line</span></span><br><span class="line">    <span class="comment"># Create the right side 3pt lines, it's 14ft long before it arcs</span></span><br><span class="line">    corner_three_a = Rectangle((<span class="number">-220</span>, <span class="number">-47.5</span>), <span class="number">0</span>, <span class="number">140</span>, linewidth=lw, color=color)</span><br><span class="line">    <span class="comment"># Create the right side 3pt lines, it's 14ft long before it arcs</span></span><br><span class="line">    corner_three_b = Rectangle((<span class="number">220</span>, <span class="number">-47.5</span>), <span class="number">0</span>, <span class="number">140</span>, linewidth=lw, color=color)</span><br><span class="line">    <span class="comment"># 3pt arc - center of arc will be the hoop, arc is 23'9" away from hoop</span></span><br><span class="line">    three_arc = Arc((<span class="number">0</span>, <span class="number">0</span>), <span class="number">475</span>, <span class="number">475</span>, theta1=<span class="number">22</span>, theta2=<span class="number">158</span>, linewidth=lw, color=color)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Center Court</span></span><br><span class="line">    center_outer_arc = Arc((<span class="number">0</span>, <span class="number">422.5</span>), <span class="number">120</span>, <span class="number">120</span>, theta1=<span class="number">180</span>, theta2=<span class="number">0</span>, linewidth=lw, color=color)</span><br><span class="line">    center_inner_arc = Arc((<span class="number">0</span>, <span class="number">422.5</span>), <span class="number">40</span>, <span class="number">40</span>, theta1=<span class="number">180</span>, theta2=<span class="number">0</span>, linewidth=lw, color=color)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># List of the court elements to be plotted onto the axes</span></span><br><span class="line">    court_elements = [hoop, backboard, outer_box, inner_box, top_free_throw,</span><br><span class="line">                      bottom_free_throw, restricted, corner_three_a,</span><br><span class="line">                      corner_three_b, three_arc, center_outer_arc,</span><br><span class="line">                      center_inner_arc]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> outer_lines:</span><br><span class="line">        <span class="comment"># Draw the half court line, baseline and side out bound lines</span></span><br><span class="line">        outer_lines = Rectangle((<span class="number">-250</span>, <span class="number">-47.5</span>), <span class="number">500</span>, <span class="number">470</span>, linewidth=lw, color=color, fill=<span class="literal">False</span>)</span><br><span class="line">        court_elements.append(outer_lines)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Add the court elements onto the axes</span></span><br><span class="line">    <span class="keyword">for</span> element <span class="keyword">in</span> court_elements:</span><br><span class="line">    	ax.add_patch(element)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ax</span><br></pre></td></tr></table></figure>
+
+<p>现在测试一下效果：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ns.set_style(<span class="string">'white'</span>)</span><br><span class="line">sns.set_color_codes()</span><br><span class="line"></span><br><span class="line">plt.figure(figsize=(<span class="number">12</span>,<span class="number">11</span>))</span><br><span class="line"></span><br><span class="line">draw_court()</span><br><span class="line">plt.xlim(<span class="number">-250</span>,<span class="number">250</span>)</span><br><span class="line">plt.ylim(<span class="number">422.5</span>, <span class="number">-47.5</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>效果如下：<br><img src="/images/draw_court.png" alt="draw_court" width="760px" /></p>
+<h3 id="绘制投篮分布图"><a href="#绘制投篮分布图" class="headerlink" title="绘制投篮分布图"></a>绘制投篮分布图</h3><h4 id="获取投篮数据"><a href="#获取投篮数据" class="headerlink" title="获取投篮数据"></a>获取投篮数据</h4><p>获取最权威数据的途径当然是nba官网<a href="http://stats.nba.com/" target="_blank" rel="noopener">stats.nba.com</a>。NBA官网并没有提供相关的API，不过我们可以通过requests库从官方获取包含我们需要信息的JSON文件，具体类实现如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shots</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Shots is a wrapper around the NBA stats API that can access the shot chart</span></span><br><span class="line"><span class="string">    data.</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, player_id, league_id=<span class="string">"00"</span>, season=<span class="string">"2014-15"</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 season_type=<span class="string">"Regular Season"</span>, team_id=<span class="number">0</span>, game_id=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 outcome=<span class="string">""</span>, location=<span class="string">""</span>, month=<span class="number">0</span>, season_segment=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 date_from=<span class="string">""</span>, date_to=<span class="string">""</span>, opp_team_id=<span class="number">0</span>, vs_conference=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 vs_division=<span class="string">""</span>, position=<span class="string">""</span>, rookie_year=<span class="string">""</span>, game_segment=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 period=<span class="number">0</span>, last_n_games=<span class="number">0</span>, clutch_time=<span class="string">""</span>, ahead_behind=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 point_diff=<span class="string">""</span>, range_type=<span class="string">""</span>, start_period=<span class="string">""</span>, end_period=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 start_range=<span class="string">""</span>, end_range=<span class="string">""</span>, context_filter=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 context_measure=<span class="string">"FGA"</span>)</span>:</span></span><br><span class="line"></span><br><span class="line">        self.player_id = player_id</span><br><span class="line"></span><br><span class="line">        self.base_url = <span class="string">"http://stats.nba.com/stats/shotchartdetail?"</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># <span class="doctag">TODO:</span> Figure out what all these parameters mean for NBA stats api</span></span><br><span class="line">        <span class="comment">#       Need to figure out and include CFID and CFPARAMS, they are</span></span><br><span class="line">        <span class="comment">#       associated w/ContextFilter somehow</span></span><br><span class="line">        self.url_paramaters = &#123;</span><br><span class="line">                                <span class="string">"LeagueID"</span>: league_id,</span><br><span class="line">                                <span class="string">"Season"</span>: season,</span><br><span class="line">                                <span class="string">"SeasonType"</span>: season_type,</span><br><span class="line">                                <span class="string">"TeamID"</span>: team_id,</span><br><span class="line">                                <span class="string">"PlayerID"</span>: player_id,</span><br><span class="line">                                <span class="string">"GameID"</span>: game_id,</span><br><span class="line">                                <span class="string">"Outcome"</span>: outcome,</span><br><span class="line">                                <span class="string">"Location"</span>: location,</span><br><span class="line">                                <span class="string">"Month"</span>: month,</span><br><span class="line">                                <span class="string">"SeasonSegment"</span>: season_segment,</span><br><span class="line">                                <span class="string">"DateFrom"</span>: date_from,</span><br><span class="line">                                <span class="string">"DateTo"</span>: date_to,</span><br><span class="line">                                <span class="string">"OpponentTeamID"</span>: opp_team_id,</span><br><span class="line">                                <span class="string">"VsConference"</span>: vs_conference,</span><br><span class="line">                                <span class="string">"VsDivision"</span>: vs_division,</span><br><span class="line">                                <span class="string">"Position"</span>: position,</span><br><span class="line">                                <span class="string">"RookieYear"</span>: rookie_year,</span><br><span class="line">                                <span class="string">"GameSegment"</span>: game_segment,</span><br><span class="line">                                <span class="string">"Period"</span>: period,</span><br><span class="line">                                <span class="string">"LastNGames"</span>: last_n_games,</span><br><span class="line">                                <span class="string">"ClutchTime"</span>: clutch_time,</span><br><span class="line">                                <span class="string">"AheadBehind"</span>: ahead_behind,</span><br><span class="line">                                <span class="string">"PointDiff"</span>: point_diff,</span><br><span class="line">                                <span class="string">"RangeType"</span>: range_type,</span><br><span class="line">                                <span class="string">"StartPeriod"</span>: start_period,</span><br><span class="line">                                <span class="string">"EndPeriod"</span>: end_period,</span><br><span class="line">                                <span class="string">"StartRange"</span>: start_range,</span><br><span class="line">                                <span class="string">"EndRange"</span>: end_range,</span><br><span class="line">                                <span class="string">"ContextFilter"</span>: context_filter, <span class="comment"># unsure of what this does</span></span><br><span class="line">                                <span class="string">"ContextMeasure"</span>: context_measure</span><br><span class="line">                            &#125;</span><br><span class="line"></span><br><span class="line">        self.response = requests.get(self.base_url, params=self.url_paramaters)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">change_params</span><span class="params">(self, parameters)</span>:</span></span><br><span class="line">        <span class="string">"""Pass in a disctionary of url parameters to change"""</span></span><br><span class="line">        self.url_paramaters.update(parameters)</span><br><span class="line">        self.response = requests.get(self.base_url, params=self.url_paramaters)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_shots</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="string">"""Returns the shot chart data as a pandas DataFrame."""</span></span><br><span class="line">        shots = self.response.json()[<span class="string">'resultSets'</span>][<span class="number">0</span>][<span class="string">'rowSet'</span>]</span><br><span class="line">        headers = self.response.json()[<span class="string">'resultSets'</span>][<span class="number">0</span>][<span class="string">'headers'</span>]</span><br><span class="line">        <span class="keyword">return</span> pd.DataFrame(shots, columns=headers)</span><br></pre></td></tr></table></figure>
+
+<p>当定义<code>Shots</code>类的一个实例时，必须为参数<code>player_id</code>传入一个值，该数值代表球员的编号，如不知道可以参考：<a href="https://raw.githubusercontent.com/savvastj/nbaShotChartsData/master/player_id.csv" target="_blank" rel="noopener">player_id.csv</a>。本文中以Kobe Bryant在2005-06赛季的数据为例，使用方法如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">Kobe = Shots(<span class="number">977</span>, season=<span class="string">"2005-06"</span>)</span><br><span class="line">shot_df = Kobe.get_shots()</span><br></pre></td></tr></table></figure>
+
+<h4 id="绘制投篮分布图-1"><a href="#绘制投篮分布图-1" class="headerlink" title="绘制投篮分布图"></a>绘制投篮分布图</h4><p><code>Shorts</code>类的get_shots()方法返回的数据包含了Kobe Bryant在2005-06常规赛期间的所有出手投篮数据，通过如下操作可以提取该数据的头信息：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> IPython.display <span class="keyword">import</span> display</span><br><span class="line"><span class="keyword">with</span> pd.option_context(<span class="string">'display.max_columns'</span>, <span class="literal">None</span>):</span><br><span class="line">    display(shot_df.head())</span><br></pre></td></tr></table></figure>
+
+<p>从结果中可以发现我们需要的数据在LOC_X和LOC_Y 里面，这些坐标值对应每一次出手投篮，然后我们可以把这些坐标绘制到一组表示篮球场的轴上，绘制投篮分布图的函数如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">shot_chart</span><span class="params">(x, y, title=<span class="string">""</span>, kind=<span class="string">"scatter"</span>, color=<span class="string">"b"</span>, cmap=None,</span></span></span><br><span class="line"><span class="function"><span class="params">               xlim=<span class="params">(<span class="number">-250</span>, <span class="number">250</span>)</span>, ylim=<span class="params">(<span class="number">422.5</span>, <span class="number">-47.5</span>)</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">               court_color=<span class="string">"gray"</span>, outer_lines=False, court_lw=<span class="number">1</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">               flip_court=False, kde_shade=True, hex_gridsize=None,</span></span></span><br><span class="line"><span class="function"><span class="params">               ax=None, **kwargs)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Returns an Axes object with player shots plotted.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    TODO: explain the parameters</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ax <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        ax = plt.gca()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> cmap <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        cmap = sns.light_palette(color, as_cmap=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> flip_court:</span><br><span class="line">        ax.set_xlim(xlim)</span><br><span class="line">        ax.set_ylim(ylim)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        ax.set_xlim(xlim[::<span class="number">-1</span>])</span><br><span class="line">        ax.set_ylim(ylim[::<span class="number">-1</span>])</span><br><span class="line"></span><br><span class="line">    ax.tick_params(labelbottom=<span class="string">"off"</span>, labelleft=<span class="string">"off"</span>)</span><br><span class="line">    ax.set_title(title, fontsize=<span class="number">18</span>)</span><br><span class="line"></span><br><span class="line">    draw_court(ax, color=court_color, lw=court_lw, outer_lines=outer_lines)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> kind == <span class="string">"scatter"</span>:</span><br><span class="line">        ax.scatter(x, y, c=color, **kwargs)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">elif</span> kind == <span class="string">"kde"</span>:</span><br><span class="line">        sns.kdeplot(x, y, shade=kde_shade, cmap=cmap, ax=ax, **kwargs)</span><br><span class="line">        ax.set_xlabel(<span class="string">''</span>)</span><br><span class="line">        ax.set_ylabel(<span class="string">''</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">elif</span> kind == <span class="string">"hex"</span>:</span><br><span class="line">        <span class="keyword">if</span> hex_gridsize <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="comment"># Get the number of bins for hexbin using Freedman-Diaconis rule</span></span><br><span class="line">            <span class="comment"># This is idea was taken from seaborn, which got the calculation</span></span><br><span class="line">            <span class="comment"># from http://stats.stackexchange.com/questions/798/</span></span><br><span class="line">            <span class="keyword">from</span> seaborn.distributions <span class="keyword">import</span> _freedman_diaconis_bins</span><br><span class="line">            x_bin = _freedman_diaconis_bins(x)</span><br><span class="line">            y_bin = _freedman_diaconis_bins(y)</span><br><span class="line">            hex_gridsize = int(np.mean([x_bin, y_bin]))</span><br><span class="line"></span><br><span class="line">        ax.hexbin(x, y, gridsize=hex_gridsize, cmap=cmap, **kwargs)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">"kind must be 'scatter', 'kde', or 'hex'."</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ax</span><br></pre></td></tr></table></figure>
+
+<p>使用方法如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">shot_chart(shot_df.LOC_X, shot_df.LOC_Y)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>效果如下：</p>
+<img src="/images/Kobe_shot_chart.png" alt="Kobe_shot_chart" width="760px" />
+
+<h4 id="投篮热力图"><a href="#投篮热力图" class="headerlink" title="投篮热力图"></a>投篮热力图</h4><p>Seaborn是Python中基于matplotlib的统计绘图模块，下面的函数是使用searorn中的<a href="http://stanford.edu/~mwaskom/software/seaborn/generated/seaborn.jointplot.html" target="_blank" rel="noopener"><code>Jointplot()</code></a>函数可以让我们以统计学的方式展示投篮分布图：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">shot_chart_jointplot</span><span class="params">(x, y, data=None, title=<span class="string">""</span>, kind=<span class="string">"scatter"</span>, color=<span class="string">"b"</span>, </span></span></span><br><span class="line"><span class="function"><span class="params">                         cmap=None, xlim=<span class="params">(<span class="number">-250</span>, <span class="number">250</span>)</span>, ylim=<span class="params">(<span class="number">422.5</span>, <span class="number">-47.5</span>)</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                         space=<span class="number">0</span>, court_color=<span class="string">"gray"</span>, outer_lines=False,</span></span></span><br><span class="line"><span class="function"><span class="params">                         court_lw=<span class="number">1</span>, flip_court=False,</span></span></span><br><span class="line"><span class="function"><span class="params">                         set_size_inches=<span class="params">(<span class="number">12</span>, <span class="number">11</span>)</span>, **kwargs)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Returns a seaborn JointGrid using sns.jointplot</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    TODO: Better documentation</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># If a colormap is not provided, then it is based off of the color</span></span><br><span class="line">    <span class="keyword">if</span> cmap <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        cmap = sns.light_palette(color, as_cmap=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    plot = sns.jointplot(x, y, data=<span class="literal">None</span>, stat_func=<span class="literal">None</span>, kind=kind, space=<span class="number">0</span>, color=cmap(<span class="number">0.1</span>), cmap=cmap, **kwargs)</span><br><span class="line"></span><br><span class="line">    plot.fig.set_size_inches(set_size_inches)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment"># A joint plot has 3 Axes, the first one called ax_joint </span></span><br><span class="line">    <span class="comment"># is the one we want to draw our court onto and adjust some other settings</span></span><br><span class="line">    ax = plot.ax_joint</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> flip_court:</span><br><span class="line">        ax.set_xlim(xlim)</span><br><span class="line">        ax.set_ylim(ylim)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        ax.set_xlim(xlim[::<span class="number">-1</span>])</span><br><span class="line">        ax.set_ylim(ylim[::<span class="number">-1</span>])</span><br><span class="line"></span><br><span class="line">    draw_court(ax, color=court_color, lw=court_lw, outer_lines=outer_lines)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Get rid of axis labels and tick marks</span></span><br><span class="line">    ax.set_xlabel(<span class="string">''</span>)</span><br><span class="line">    ax.set_ylabel(<span class="string">''</span>)</span><br><span class="line">    ax.tick_params(labelbottom=<span class="string">'off'</span>, labelleft=<span class="string">'off'</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Add a title</span></span><br><span class="line">    ax.set_title(title, y=<span class="number">-0.1</span>, fontsize=<span class="number">18</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> plot</span><br></pre></td></tr></table></figure>
+
+<p>其中，参数kind可以选择不同的显示样式，可选择的有<code>“scatter”，“reg”，“resid”，“kde”，“hex”</code>，参数<code>cmap</code>为matplotlib配色。示例如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">shot_chart_jointplot(shot_df.LOC_X, shot_df.LOC_Y, title=<span class="string">"Kobe Bryant FGA \n2005-06 Reg. Season"</span>, kind=<span class="string">"kde"</span>, cmap=plt.cm.YlOrRd_r)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>效果如下：</p>
+<img src="/images/shot_chart_jointplot.png" alt="shot_chart_jointplot" width="760px" />
+
+<hr>
+<h3 id="添加球员头像信息"><a href="#添加球员头像信息" class="headerlink" title="添加球员头像信息"></a>添加球员头像信息</h3><h4 id="获取球员图像"><a href="#获取球员图像" class="headerlink" title="获取球员图像"></a>获取球员图像</h4><p>为了更好的展示，我们可以在投篮热图上加上球员的头像，头像的来源仍然是<a href="http://stats.nba.com/" target="_blank" rel="noopener">stats.nba.com</a>。抓取方式如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> urllib</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_player_img</span><span class="params">(player_id)</span>:</span></span><br><span class="line">    <span class="string">"""Returns the image of the player from stats.nba.com</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Parameters</span></span><br><span class="line"><span class="string">    ----------</span></span><br><span class="line"><span class="string">    player_id: int</span></span><br><span class="line"><span class="string">        The player ID used to find the image.</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    url = <span class="string">"http://stats.nba.com/media/players/230x185/"</span>+str(player_id)+<span class="string">".png"</span></span><br><span class="line">    img_file = str(player_id) + <span class="string">".png"</span></span><br><span class="line">    <span class="keyword">return</span> urllib.urlretrieve(url, img_file)[<span class="number">0</span>]</span><br></pre></td></tr></table></figure>
+
+<p>先看一下效果：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">sns.set_style(<span class="string">'white'</span>)</span><br><span class="line">sns.set_color_codes()</span><br><span class="line"></span><br><span class="line">pic = get_player_img(<span class="number">977</span>)</span><br><span class="line">Kobe_img = plt.imread(pic)</span><br><span class="line">plt.imshow(Kobe_img)</span><br></pre></td></tr></table></figure>
+<img src="/images/977.png" alt="Kobe" width="180px" />
+
+<h4 id="带球员头像的投篮热力图"><a href="#带球员头像的投篮热力图" class="headerlink" title="带球员头像的投篮热力图"></a>带球员头像的投篮热力图</h4><p>在获取到球员头像后，我们可以通过使用<code>matplotlib.Offset</code>模块中的<code>OffsetImage</code>函数在我们的投篮热力图的右上角加入球员头像，具体实现如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">m matplotlib.offsetbox <span class="keyword">import</span>  OffsetImage</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">shot_chart_jointplot_with_player_img</span><span class="params">(x, y, player_img, data=None, title=<span class="string">""</span>, kind=<span class="string">"scatter"</span>, color=<span class="string">"b"</span>, </span></span></span><br><span class="line"><span class="function"><span class="params">                         cmap=None, xlim=<span class="params">(<span class="number">-250</span>, <span class="number">250</span>)</span>, ylim=<span class="params">(<span class="number">422.5</span>, <span class="number">-47.5</span>)</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                         space=<span class="number">0</span>, court_color=<span class="string">"gray"</span>, outer_lines=False,</span></span></span><br><span class="line"><span class="function"><span class="params">                         court_lw=<span class="number">1</span>, flip_court=False,</span></span></span><br><span class="line"><span class="function"><span class="params">                         set_size_inches=<span class="params">(<span class="number">12</span>, <span class="number">11</span>)</span>, **kwargs)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Returns a seaborn JointGrid using sns.jointplot</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    TODO: Better documentation</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># If a colormap is not provided, then it is based off of the color</span></span><br><span class="line">    <span class="keyword">if</span> cmap <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        cmap = sns.light_palette(color, as_cmap=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    plot = sns.jointplot(x, y, data=<span class="literal">None</span>, stat_func=<span class="literal">None</span>, kind=kind, space=<span class="number">0</span>, color=cmap(<span class="number">0.1</span>), cmap=cmap, **kwargs)</span><br><span class="line"></span><br><span class="line">    plot.fig.set_size_inches(set_size_inches)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment"># A joint plot has 3 Axes, the first one called ax_joint </span></span><br><span class="line">    <span class="comment"># is the one we want to draw our court onto and adjust some other settings</span></span><br><span class="line">    ax = plot.ax_joint</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> flip_court:</span><br><span class="line">        ax.set_xlim(xlim)</span><br><span class="line">        ax.set_ylim(ylim)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        ax.set_xlim(xlim[::<span class="number">-1</span>])</span><br><span class="line">        ax.set_ylim(ylim[::<span class="number">-1</span>])</span><br><span class="line"></span><br><span class="line">    draw_court(ax, color=court_color, lw=court_lw, outer_lines=outer_lines)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Get rid of axis labels and tick marks</span></span><br><span class="line">    ax.set_xlabel(<span class="string">''</span>)</span><br><span class="line">    ax.set_ylabel(<span class="string">''</span>)</span><br><span class="line">    ax.tick_params(labelbottom=<span class="string">'off'</span>, labelleft=<span class="string">'off'</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Add a title</span></span><br><span class="line">    ax.set_title(title, y=<span class="number">-0.1</span>, fontsize=<span class="number">18</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># First create our OffSetImage by passing in our image</span></span><br><span class="line">    <span class="comment"># and set the zoom level to make the image small enough </span></span><br><span class="line">    <span class="comment"># to fit on our plot</span></span><br><span class="line">    img = OffsetImage(player_img, zoom=<span class="number">0.6</span>)</span><br><span class="line">    <span class="comment"># Pass in a tuple of x,y coordinates to set_offset</span></span><br><span class="line">    <span class="comment"># to place the plot where you want, I just played around</span></span><br><span class="line">    <span class="comment"># with the values until I found a spot where I wanted</span></span><br><span class="line">    <span class="comment"># the image to be</span></span><br><span class="line">    img.set_offset((<span class="number">992</span>,<span class="number">914</span>))</span><br><span class="line">    <span class="comment"># add the image</span></span><br><span class="line">    ax.add_artist(img)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> plot</span><br></pre></td></tr></table></figure>
+<p>使用示例如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">shot_chart_jointplot_with_player_img(shot_df.LOC_X, shot_df.LOC_Y, Kobe_img, title=<span class="string">"Kobe Bryant FGA \n2005-06 Reg. Season"</span>, kind=<span class="string">"kde"</span>, cmap=plt.cm.YlOrRd_r)</span><br><span class="line">plt.savefig(<span class="string">'Kobe_shot_chart_jointplot_with_player_img.png'</span>)</span><br></pre></td></tr></table></figure>
+
+<p>效果如下图：</p>
+<img src="/images/Kobe_shot_chart_jointplot_with_player_img.png" alt="Kobe_shot_chart_jointplot_with_player_img" width="760px" />
+]]></content>
+      <categories>
+        <category>Python</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+        <tag>NBA</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>KMP和扩展KMP算法</title>
+    <url>/2015/08/04/kmp/</url>
+    <content><![CDATA[<p>介绍经典的KMP算法。</p>
+<a id="more"></a>
+
+<h3 id="KMP"><a href="#KMP" class="headerlink" title="KMP"></a>KMP</h3><ul>
+<li><p>Leetcode</p>
+<p>  <a href="https://leetcode.com/problems/implement-strstr/" target="_blank" rel="noopener">Implement strStr()</a></p>
+</li>
+<li><p>分析</p>
+<p>  KMP算法是一个经典的字符串匹配算法，如给定主串S及模式串T，求出S子串第一次匹配T的地址，如不存在则返回-1。其主要思想是利用字符匹配失败的信息，减少模式串与主串的匹配次数。</p>
+<blockquote>
+<p>如下图，假设已经比对了<code>s[i-1, i+m-1]</code>（图中黄色部分）和<code>T[0, j+n-1]</code>，在比对<code>S[i+m]</code>和<code>T[j+n]</code>时，发生了字符不匹配。</p>
+</blockquote>
+<p>  <img src="/images/kmp01.png" alt="kmp01"></p>
+<blockquote>
+<p>按照传统的做法，需要从头开始比较，即从<code>S[i]</code>和<code>T[0]</code>逐个进行字符匹配，如下图。</p>
+</blockquote>
+<p>  <img src="/images/kmp02.png" alt="kmp02"></p>
+<blockquote>
+<p>上面的方法显然不可取，因为我们在之前的比对过程中已经发现<code>s[i-1, i+m-1]=T[0, j+n-1]</code>，我们需要充分利用这些信息来避免重复的工作。</p>
+</blockquote>
+<blockquote>
+<p>在去理解KMP算法之前，我们需要先弄清楚两个概念：</p>
+</blockquote>
+<ul>
+<li><p>前缀：除最后一个字符外，一个字符串的全部头补组合，如hello的前缀有h, he, hel, hell。</p>
+</li>
+<li><p>后缀：除第一个字符外，一个字符串全部尾部组合，如hello的后缀有ello, llo, lo, o。</p>
+</li>
+</ul>
+<hr>
+<blockquote>
+<p>如下图，假设<code>T[0, j+n-1]</code>最长公共前缀和后缀为<code>t0</code>和<code>t1</code>，即<code>t0=t1</code>且<code>T[j]!=T[j+n]</code>。在上次的比较中，我们已经得到<code>s=t1</code>，所以t0这部分是不需要再重复比对的，我们只需要从<code>S[i+m]</code>和<code>T[j]</code>开始比较就可以了。</p>
+</blockquote>
+<p>  <img src="/images/kmp03.png" alt="kmp03"></p>
+<blockquote>
+<p>如果<code>S[i+m]=T[j]</code>，则继续比对两个字符串的下一个字符，若<code>S[i+m]!=T[j]</code>，我们需要继续通过字符串<code>t0</code>的最长公共前缀和后缀来判断T中需要和<code>S[i+m]</code>进行比较的字符的最大位置。若该位置的字符仍与S[i+m]不相等，则继续以前缀作为子串，寻找T中需要做判断的字符的位置，如此往复，直至该位置的字符和S[i+m]相等或者已经到了T的第一个字符。</p>
+</blockquote>
+<blockquote>
+<p>假设数组<code>next[i]</code>, $0 \leq i&lt;strlen(T)$存放着模式串T的子串T[0, i]的最长前缀和后缀的长度。则编程实现方法如下：</p>
+</blockquote>
+  <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">int strStr(char* S, char* T) &#123;</span><br><span class="line">	int S_len &#x3D; strlen(S);</span><br><span class="line">	int T_len&#x3D;strlen(T);</span><br><span class="line"></span><br><span class="line">	if(T_len&#x3D;&#x3D;0)</span><br><span class="line">		return 0;</span><br><span class="line"></span><br><span class="line">	int *next &#x3D; (int*)malloc(T_len*sizeof(int));</span><br><span class="line"></span><br><span class="line">	getNext(next, T);</span><br><span class="line"></span><br><span class="line">	int i;</span><br><span class="line">	int cursor &#x3D; 0;			&#x2F;&#x2F;T中需要和S[i]进行比较的字符的下标</span><br><span class="line"></span><br><span class="line">	for(i&#x3D;0;i&lt;S_len;i++)&#123;</span><br><span class="line">		while(cursor&gt;0 &amp;&amp; S[i]!&#x3D;T[cursor])</span><br><span class="line">			cursor &#x3D; next[cursor-1];</span><br><span class="line"></span><br><span class="line">		if(S[i]&#x3D;&#x3D;T[cursor])</span><br><span class="line">			cursor++;</span><br><span class="line"></span><br><span class="line">		if(cursor &#x3D;&#x3D; T_len)</span><br><span class="line">			return i+1-T_len;</span><br><span class="line">	&#125;</span><br><span class="line">	return -1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<ul>
+<li><p>next数组</p>
+<blockquote>
+<p>假设next[0, i-1]已经求出，现在我们需要求<code>next[i]</code>，如下图：</p>
+</blockquote>
+<p>  <img src="/images/kmp04.png" alt="kmp04"></p>
+<blockquote>
+<p>此时，需要比较<code>T[i]</code>和<code>T[next[i-1]]</code>是否相等。若相等，则继续比较下一组，即在<code>i+1</code>和<code>next[i-1]+1</code>处的字符。若不等，则比较在<code>i</code>和<code>next[next[i-1]]</code>处的字符是否相等，如下图红色标注的部分。</p>
+</blockquote>
+<p>  <img src="/images/kmp05.png" alt="kmp05"></p>
+<blockquote>
+<p>在计算next数组时，还需要注意临界值的判断，即next[0]=0。计算next数组的编程实现如下：</p>
+</blockquote>
+  <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">void getNext(int* next, char* T)&#123;</span><br><span class="line">	int len &#x3D; strlen(T);</span><br><span class="line">	next[0] &#x3D; 0;</span><br><span class="line"></span><br><span class="line">	int i;</span><br><span class="line">	int cursor &#x3D; 0;</span><br><span class="line">	for(i&#x3D;1;i&lt;len;i++)&#123;</span><br><span class="line">		while(cursor&gt;0 &amp;&amp; T[i]!&#x3D;T[cursor])</span><br><span class="line">		cursor &#x3D; next[cursor-1];</span><br><span class="line"></span><br><span class="line">		if(T[i]&#x3D;&#x3D;T[cursor])</span><br><span class="line">			cursor++;</span><br><span class="line"></span><br><span class="line">		next[i] &#x3D; cursor;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<hr>
+<h3 id="扩展KMP"><a href="#扩展KMP" class="headerlink" title="扩展KMP"></a>扩展KMP</h3><p>扩展KMP是求主串S的所有后缀（包括S）与模式串T的所有前缀（包括T）的最长公共元素的长度，即求子串<code>S[i, strlen(S)-1]</code>和<code>T</code>的最长公共前缀（包括自身）的长度，结果记录在extend数组中。例如，对以下两个字符串：</p>
+<blockquote>
+<p>S=”aaabaa”<br/> T=”aaba”</p>
+</blockquote>
+<p>根据上述定义，有extend[0]=2, extend[1]=4, extend[2]=1, extend[3]=0, extend[4]=2, extend[5]=1。</p>
+<ul>
+<li><p>extend数组</p>
+</li>
+<li><p>next数组</p>
+</li>
+</ul>
+<p>(未完待续)</p>
+]]></content>
+      <categories>
+        <category>算法</category>
+      </categories>
+      <tags>
+        <tag>KMP</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>最长回文子串</title>
+    <url>/2015/07/28/longest-palindromic-substring/</url>
+    <content><![CDATA[<h3 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h3><p>最长回文子串 (Longest Palindromic Substring)</p>
+<blockquote>
+<p>Given a string S, find the longest palindromic substring in S. You may assume that the maximum length of S is 1000, and there exists one unique longest palindromic substring.</p>
+</blockquote>
+<ul>
+<li><a href="https://leetcode.com/problems/longest-palindromic-substring/" target="_blank" rel="noopener">leetcode链接</a></li>
+</ul>
+<a id="more"></a>
+
+<h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><ul>
+<li><p>动态规划</p>
+<p>  使用动态规划是以空间换取时间，避免重复的判断。具体思想是在内存中开辟一段大小为len*(len+1)/2 的数组 is_palindrome，用于记录 s 中从 i 到 j (i&lt;j) 的子串是否为回文。</p>
+<ul>
+<li><p>时间复杂度： $O(n^2)$</p>
+</li>
+<li><p>空间复杂度： $O(n^2)$</p>
+</li>
+</ul>
+</li>
+<li><p>中心扩展</p>
+<p>  以字符串 s 的每个字符以及每两个在相邻位置字符相同的子串作为中心，向两边遍历，记录以该字符或字符串为中心的最长回文。</p>
+<ul>
+<li><p>时间复杂度： $O(n^2)$</p>
+</li>
+<li><p>空间复杂度： $O(1)$</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="程序"><a href="#程序" class="headerlink" title="程序"></a>程序</h3><ul>
+<li><p>动态规划</p>
+  <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pos</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">int</span> j)</span></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> j*(j+<span class="number">1</span>)/<span class="number">2</span>+i;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">char</span>* <span class="title">longestPalindrome_dp</span><span class="params">(<span class="keyword">char</span>* s)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">char</span> * res;</span><br><span class="line">	<span class="keyword">int</span> len = <span class="built_in">strlen</span>(s);</span><br><span class="line">	<span class="keyword">int</span> max_palindrome_start, max_palindrome_len;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//printf("%d\n", len);</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span>(len&lt;<span class="number">2</span>)</span><br><span class="line">		<span class="keyword">return</span> s;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> max_size = len*(len+<span class="number">1</span>)/<span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">bool</span> *is_palindrome = (<span class="keyword">bool</span> *)<span class="built_in">malloc</span>(max_size*<span class="keyword">sizeof</span>(<span class="keyword">bool</span>));     <span class="comment">//*(is_palindrome + pos(i, j)) 表示s[i...j] (i&lt;j)是不是回文</span></span><br><span class="line">	<span class="built_in">memset</span>(is_palindrome, <span class="number">0</span>, max_size*<span class="keyword">sizeof</span>(<span class="keyword">bool</span>));                 <span class="comment">//初始为false</span></span><br><span class="line"></span><br><span class="line">	max_palindrome_start = <span class="number">0</span>;</span><br><span class="line">	max_palindrome_len   = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> i,j;</span><br><span class="line">	<span class="keyword">for</span>(j=<span class="number">0</span>; j&lt;len; j++)&#123;</span><br><span class="line">		*(is_palindrome + pos(j, j)) = <span class="literal">true</span>;</span><br><span class="line">		<span class="keyword">for</span>(i=<span class="number">0</span>; i&lt;j; i++)&#123;</span><br><span class="line">			<span class="keyword">if</span>(j==i+<span class="number">1</span>)&#123;</span><br><span class="line">				<span class="keyword">if</span>(s[i]==s[j])</span><br><span class="line">					*(is_palindrome + pos(i, j)) = <span class="literal">true</span>;</span><br><span class="line">			&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">				<span class="keyword">if</span>( s[i]==s[j] &amp;&amp; (*(is_palindrome + pos(i+<span class="number">1</span>, j<span class="number">-1</span>))) )</span><br><span class="line">					*(is_palindrome + pos(i, j)) = <span class="literal">true</span>;</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">if</span>( *(is_palindrome + pos(i, j)) )&#123;</span><br><span class="line">				<span class="keyword">if</span>(max_palindrome_len&lt;(j-i+<span class="number">1</span>))&#123;</span><br><span class="line">					max_palindrome_len = j-i+<span class="number">1</span>;</span><br><span class="line">					max_palindrome_start = i;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//printf("%d\n", max_palindrome_start);</span></span><br><span class="line">	<span class="comment">//printf("%d\n", max_palindrome_len);</span></span><br><span class="line"></span><br><span class="line">	res = (<span class="keyword">char</span> *)<span class="built_in">malloc</span>((max_palindrome_len+<span class="number">1</span>)*<span class="keyword">sizeof</span>(<span class="keyword">char</span>));</span><br><span class="line">	<span class="built_in">memset</span>(res, <span class="number">0</span>, (max_palindrome_len+<span class="number">1</span>)*<span class="keyword">sizeof</span>(<span class="keyword">char</span>));</span><br><span class="line">	<span class="built_in">strncpy</span>(res, s+max_palindrome_start, max_palindrome_len);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>中心扩展</p>
+  <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">char</span>* <span class="title">longestPalindrome_ex</span><span class="params">(<span class="keyword">char</span>* s)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">char</span> * res;</span><br><span class="line">	<span class="keyword">int</span> len = <span class="built_in">strlen</span>(s);</span><br><span class="line">	<span class="keyword">int</span> max_palindrome_start, max_palindrome_len;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//printf("%d\n", len);</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span>(len&lt;<span class="number">2</span>)</span><br><span class="line">		<span class="keyword">return</span> s;</span><br><span class="line"></span><br><span class="line">	max_palindrome_start = <span class="number">0</span>;</span><br><span class="line">	max_palindrome_len   = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> i;</span><br><span class="line">	<span class="keyword">for</span>(i=<span class="number">0</span>; i&lt;len; i++)&#123;</span><br><span class="line">		<span class="keyword">int</span> palindrome_len;</span><br><span class="line">		<span class="keyword">int</span> left, right;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//以s[i]为中心</span></span><br><span class="line">		left  = i<span class="number">-1</span>;</span><br><span class="line">		right = i+<span class="number">1</span>;</span><br><span class="line">		palindrome_len   = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">while</span>(left&gt;=<span class="number">0</span>&amp;&amp;right&lt;len)&#123;</span><br><span class="line">			<span class="keyword">if</span>(s[left]==s[right])</span><br><span class="line">				palindrome_len += <span class="number">2</span>;</span><br><span class="line">			<span class="keyword">else</span></span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">			left--;</span><br><span class="line">			right++;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span>(max_palindrome_len&lt;palindrome_len)&#123;</span><br><span class="line">			max_palindrome_len = palindrome_len;</span><br><span class="line">			max_palindrome_start = i - palindrome_len/<span class="number">2</span>;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//以s[i]和s[i+1]为中心</span></span><br><span class="line">		<span class="keyword">if</span>(s[i]==s[i+<span class="number">1</span>])&#123;</span><br><span class="line">			left  = i<span class="number">-1</span>;</span><br><span class="line">			right = i+<span class="number">2</span>;</span><br><span class="line">			palindrome_len   = <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">while</span>(left&gt;=<span class="number">0</span>&amp;&amp;right&lt;len)&#123;</span><br><span class="line">				<span class="keyword">if</span>(s[left]==s[right])</span><br><span class="line">					palindrome_len += <span class="number">2</span>;</span><br><span class="line">				<span class="keyword">else</span></span><br><span class="line">					<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">				left--;</span><br><span class="line">				right++;</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">if</span>(max_palindrome_len&lt;palindrome_len)&#123;</span><br><span class="line">				max_palindrome_len = palindrome_len;</span><br><span class="line">				max_palindrome_start = i - palindrome_len/<span class="number">2</span> + <span class="number">1</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	res = (<span class="keyword">char</span> *)<span class="built_in">malloc</span>((max_palindrome_len+<span class="number">1</span>)*<span class="keyword">sizeof</span>(<span class="keyword">char</span>));</span><br><span class="line">	<span class="built_in">memset</span>(res, <span class="number">0</span>, (max_palindrome_len+<span class="number">1</span>)*<span class="keyword">sizeof</span>(<span class="keyword">char</span>));</span><br><span class="line">	<span class="built_in">strncpy</span>(res, s+max_palindrome_start, max_palindrome_len);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>程序设计</category>
+      </categories>
+      <tags>
+        <tag>Leetcode</tag>
+      </tags>
+  </entry>
+</search>

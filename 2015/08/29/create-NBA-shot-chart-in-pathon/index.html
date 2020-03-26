@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+    
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    通过Python绘制NBA球员投篮图表 |  炸炸是个呼噜怪
+  </title>
+  <meta name="generator" content="hexo-theme-yilia-plus">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/css/main.css">
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+  
+
+  
+
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    <main class="content">
+      <section class="outer">
+  <article id="post-create-NBA-shot-chart-in-pathon" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  通过Python绘制NBA球员投篮图表
+</h1>
+  
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2015/08/29/create-NBA-shot-chart-in-pathon/" class="article-date">
+  <time datetime="2015-08-29T12:25:27.000Z" itemprop="datePublished">2015-08-29</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Python/">Python</a>
+  </div>
+
+      
+      
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.3k字</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">12分钟</span>
+        </span>
+    </span>
+</div>
+
+      
+    </div>
+    
+
+    
+    
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+
+      
+      <p>喜欢看NBA的同学都见过官方绘制的球员投篮图表，这些图表能够非常直观地反映某个球员的投篮分布图以及投篮热图等。当然，借助NBA官方提供的数据，我们也可以自己绘制这些图表。</p>
+<p>只要有数据，能够绘这种图的工具有很多，鉴于最近在学习Python，而且刚好也有一位大牛写了一篇相关的文章<a href="http://savvastjortjoglou.com/nba-shot-sharts.html" target="_blank" rel="noopener">“How to Create NBA Shot Charts in Python”</a>，借鉴这篇文章，我也使用Python折腾了一把。</p>
+<a id="more"></a>
+
+<h3 id="运行环境"><a href="#运行环境" class="headerlink" title="运行环境"></a>运行环境</h3><ul>
+<li><p>操作系统</p>
+<p>  CentOS 6.7(32-bit)</p>
+</li>
+<li><p>Python版本</p>
+<p>  2.7.10</p>
+</li>
+</ul>
+<h3 id="第三方模块"><a href="#第三方模块" class="headerlink" title="第三方模块"></a>第三方模块</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line"><span class="keyword">import</span> seaborn <span class="keyword">as</span> sns</span><br></pre></td></tr></table></figure>
+
+<h3 id="绘制篮球场"><a href="#绘制篮球场" class="headerlink" title="绘制篮球场"></a>绘制篮球场</h3><p>绘制投篮图表时，我们需要以篮球场地作为参考标准，所以我们先要清楚的了解篮球场的尺寸（详见<a href="http://www.sportscourtdimensions.com/wp-content/uploads/2015/02/nba_court_dimensions_h.png" target="_blank" rel="noopener">1</a>和<a href="http://www.sportsknowhow.com/basketball/dimensions/nba-basketball-court-dimensions.html" target="_blank" rel="noopener">2</a>），然后使用Matplotlib Patches绘制<code>圆形</code>，<code>矩形</code>和<code>圆弧</code>，并组合成一个篮球场。绘制篮球场的函数实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> matplotlib.patches <span class="keyword">import</span> Circle, Rectangle, Arc</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">draw_court</span><span class="params">(ax=None, color=<span class="string">'gray'</span>, lw=<span class="number">1</span>, outer_lines=False)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Returns an axes with a basketball court drawn onto to it.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    This function draws a court based on the x and y-axis values that the NBA</span></span><br><span class="line"><span class="string">    stats API provides for the shot chart data.  For example, the NBA stat API</span></span><br><span class="line"><span class="string">    represents the center of the hoop at the (0,0) coordinate.  Twenty-two feet</span></span><br><span class="line"><span class="string">    from the left of the center of the hoop in is represented by the (-220,0)</span></span><br><span class="line"><span class="string">    coordinates.  So one foot equals +/-10 units on the x and y-axis.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    TODO: explain the parameters</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="keyword">if</span> ax <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        ax = plt.gca()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Create the various parts of an NBA basketball court</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># Create the basketball hoop</span></span><br><span class="line">    hoop = Circle((<span class="number">0</span>, <span class="number">0</span>), radius=<span class="number">7.5</span>, linewidth=lw, color=color, fill=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Create backboard</span></span><br><span class="line">    backboard = Rectangle((<span class="number">-30</span>, <span class="number">-7.5</span>), <span class="number">60</span>, <span class="number">-1</span>, linewidth=lw, color=color)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># The paint</span></span><br><span class="line">    <span class="comment"># Create the outer box 0f the paint, width=16ft, height=19ft</span></span><br><span class="line">    outer_box = Rectangle((<span class="number">-80</span>, <span class="number">-47.5</span>), <span class="number">160</span>, <span class="number">190</span>, linewidth=lw, color=color, fill=<span class="literal">False</span>)</span><br><span class="line">    <span class="comment"># Create the inner box of the paint, widt=12ft, height=19ft</span></span><br><span class="line">    inner_box = Rectangle((<span class="number">-60</span>, <span class="number">-47.5</span>), <span class="number">120</span>, <span class="number">190</span>, linewidth=lw, color=color, fill=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Create free throw top arc</span></span><br><span class="line">    top_free_throw = Arc((<span class="number">0</span>, <span class="number">142.5</span>), <span class="number">120</span>, <span class="number">120</span>, theta1=<span class="number">0</span>, theta2=<span class="number">180</span>, linewidth=lw, color=color, fill=<span class="literal">False</span>)</span><br><span class="line">    <span class="comment"># Create free throw bottom arc</span></span><br><span class="line">    bottom_free_throw = Arc((<span class="number">0</span>, <span class="number">142.5</span>), <span class="number">120</span>, <span class="number">120</span>, theta1=<span class="number">180</span>, theta2=<span class="number">0</span>, linewidth=lw, color=color, linestyle=<span class="string">'dashed'</span>)</span><br><span class="line">    <span class="comment"># Restricted Zone, it is an arc with 4ft radius from center of the hoop</span></span><br><span class="line">    restricted = Arc((<span class="number">0</span>, <span class="number">0</span>), <span class="number">80</span>, <span class="number">80</span>, theta1=<span class="number">0</span>, theta2=<span class="number">180</span>, linewidth=lw, color=color)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Three point line</span></span><br><span class="line">    <span class="comment"># Create the right side 3pt lines, it's 14ft long before it arcs</span></span><br><span class="line">    corner_three_a = Rectangle((<span class="number">-220</span>, <span class="number">-47.5</span>), <span class="number">0</span>, <span class="number">140</span>, linewidth=lw, color=color)</span><br><span class="line">    <span class="comment"># Create the right side 3pt lines, it's 14ft long before it arcs</span></span><br><span class="line">    corner_three_b = Rectangle((<span class="number">220</span>, <span class="number">-47.5</span>), <span class="number">0</span>, <span class="number">140</span>, linewidth=lw, color=color)</span><br><span class="line">    <span class="comment"># 3pt arc - center of arc will be the hoop, arc is 23'9" away from hoop</span></span><br><span class="line">    three_arc = Arc((<span class="number">0</span>, <span class="number">0</span>), <span class="number">475</span>, <span class="number">475</span>, theta1=<span class="number">22</span>, theta2=<span class="number">158</span>, linewidth=lw, color=color)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Center Court</span></span><br><span class="line">    center_outer_arc = Arc((<span class="number">0</span>, <span class="number">422.5</span>), <span class="number">120</span>, <span class="number">120</span>, theta1=<span class="number">180</span>, theta2=<span class="number">0</span>, linewidth=lw, color=color)</span><br><span class="line">    center_inner_arc = Arc((<span class="number">0</span>, <span class="number">422.5</span>), <span class="number">40</span>, <span class="number">40</span>, theta1=<span class="number">180</span>, theta2=<span class="number">0</span>, linewidth=lw, color=color)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># List of the court elements to be plotted onto the axes</span></span><br><span class="line">    court_elements = [hoop, backboard, outer_box, inner_box, top_free_throw,</span><br><span class="line">                      bottom_free_throw, restricted, corner_three_a,</span><br><span class="line">                      corner_three_b, three_arc, center_outer_arc,</span><br><span class="line">                      center_inner_arc]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> outer_lines:</span><br><span class="line">        <span class="comment"># Draw the half court line, baseline and side out bound lines</span></span><br><span class="line">        outer_lines = Rectangle((<span class="number">-250</span>, <span class="number">-47.5</span>), <span class="number">500</span>, <span class="number">470</span>, linewidth=lw, color=color, fill=<span class="literal">False</span>)</span><br><span class="line">        court_elements.append(outer_lines)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Add the court elements onto the axes</span></span><br><span class="line">    <span class="keyword">for</span> element <span class="keyword">in</span> court_elements:</span><br><span class="line">    	ax.add_patch(element)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ax</span><br></pre></td></tr></table></figure>
+
+<p>现在测试一下效果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ns.set_style(<span class="string">'white'</span>)</span><br><span class="line">sns.set_color_codes()</span><br><span class="line"></span><br><span class="line">plt.figure(figsize=(<span class="number">12</span>,<span class="number">11</span>))</span><br><span class="line"></span><br><span class="line">draw_court()</span><br><span class="line">plt.xlim(<span class="number">-250</span>,<span class="number">250</span>)</span><br><span class="line">plt.ylim(<span class="number">422.5</span>, <span class="number">-47.5</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>效果如下：<br><img src="/images/draw_court.png" alt="draw_court" width="760px" /></p>
+<h3 id="绘制投篮分布图"><a href="#绘制投篮分布图" class="headerlink" title="绘制投篮分布图"></a>绘制投篮分布图</h3><h4 id="获取投篮数据"><a href="#获取投篮数据" class="headerlink" title="获取投篮数据"></a>获取投篮数据</h4><p>获取最权威数据的途径当然是nba官网<a href="http://stats.nba.com/" target="_blank" rel="noopener">stats.nba.com</a>。NBA官网并没有提供相关的API，不过我们可以通过requests库从官方获取包含我们需要信息的JSON文件，具体类实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shots</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Shots is a wrapper around the NBA stats API that can access the shot chart</span></span><br><span class="line"><span class="string">    data.</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, player_id, league_id=<span class="string">"00"</span>, season=<span class="string">"2014-15"</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 season_type=<span class="string">"Regular Season"</span>, team_id=<span class="number">0</span>, game_id=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 outcome=<span class="string">""</span>, location=<span class="string">""</span>, month=<span class="number">0</span>, season_segment=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 date_from=<span class="string">""</span>, date_to=<span class="string">""</span>, opp_team_id=<span class="number">0</span>, vs_conference=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 vs_division=<span class="string">""</span>, position=<span class="string">""</span>, rookie_year=<span class="string">""</span>, game_segment=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 period=<span class="number">0</span>, last_n_games=<span class="number">0</span>, clutch_time=<span class="string">""</span>, ahead_behind=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 point_diff=<span class="string">""</span>, range_type=<span class="string">""</span>, start_period=<span class="string">""</span>, end_period=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 start_range=<span class="string">""</span>, end_range=<span class="string">""</span>, context_filter=<span class="string">""</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 context_measure=<span class="string">"FGA"</span>)</span>:</span></span><br><span class="line"></span><br><span class="line">        self.player_id = player_id</span><br><span class="line"></span><br><span class="line">        self.base_url = <span class="string">"http://stats.nba.com/stats/shotchartdetail?"</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># <span class="doctag">TODO:</span> Figure out what all these parameters mean for NBA stats api</span></span><br><span class="line">        <span class="comment">#       Need to figure out and include CFID and CFPARAMS, they are</span></span><br><span class="line">        <span class="comment">#       associated w/ContextFilter somehow</span></span><br><span class="line">        self.url_paramaters = &#123;</span><br><span class="line">                                <span class="string">"LeagueID"</span>: league_id,</span><br><span class="line">                                <span class="string">"Season"</span>: season,</span><br><span class="line">                                <span class="string">"SeasonType"</span>: season_type,</span><br><span class="line">                                <span class="string">"TeamID"</span>: team_id,</span><br><span class="line">                                <span class="string">"PlayerID"</span>: player_id,</span><br><span class="line">                                <span class="string">"GameID"</span>: game_id,</span><br><span class="line">                                <span class="string">"Outcome"</span>: outcome,</span><br><span class="line">                                <span class="string">"Location"</span>: location,</span><br><span class="line">                                <span class="string">"Month"</span>: month,</span><br><span class="line">                                <span class="string">"SeasonSegment"</span>: season_segment,</span><br><span class="line">                                <span class="string">"DateFrom"</span>: date_from,</span><br><span class="line">                                <span class="string">"DateTo"</span>: date_to,</span><br><span class="line">                                <span class="string">"OpponentTeamID"</span>: opp_team_id,</span><br><span class="line">                                <span class="string">"VsConference"</span>: vs_conference,</span><br><span class="line">                                <span class="string">"VsDivision"</span>: vs_division,</span><br><span class="line">                                <span class="string">"Position"</span>: position,</span><br><span class="line">                                <span class="string">"RookieYear"</span>: rookie_year,</span><br><span class="line">                                <span class="string">"GameSegment"</span>: game_segment,</span><br><span class="line">                                <span class="string">"Period"</span>: period,</span><br><span class="line">                                <span class="string">"LastNGames"</span>: last_n_games,</span><br><span class="line">                                <span class="string">"ClutchTime"</span>: clutch_time,</span><br><span class="line">                                <span class="string">"AheadBehind"</span>: ahead_behind,</span><br><span class="line">                                <span class="string">"PointDiff"</span>: point_diff,</span><br><span class="line">                                <span class="string">"RangeType"</span>: range_type,</span><br><span class="line">                                <span class="string">"StartPeriod"</span>: start_period,</span><br><span class="line">                                <span class="string">"EndPeriod"</span>: end_period,</span><br><span class="line">                                <span class="string">"StartRange"</span>: start_range,</span><br><span class="line">                                <span class="string">"EndRange"</span>: end_range,</span><br><span class="line">                                <span class="string">"ContextFilter"</span>: context_filter, <span class="comment"># unsure of what this does</span></span><br><span class="line">                                <span class="string">"ContextMeasure"</span>: context_measure</span><br><span class="line">                            &#125;</span><br><span class="line"></span><br><span class="line">        self.response = requests.get(self.base_url, params=self.url_paramaters)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">change_params</span><span class="params">(self, parameters)</span>:</span></span><br><span class="line">        <span class="string">"""Pass in a disctionary of url parameters to change"""</span></span><br><span class="line">        self.url_paramaters.update(parameters)</span><br><span class="line">        self.response = requests.get(self.base_url, params=self.url_paramaters)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_shots</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="string">"""Returns the shot chart data as a pandas DataFrame."""</span></span><br><span class="line">        shots = self.response.json()[<span class="string">'resultSets'</span>][<span class="number">0</span>][<span class="string">'rowSet'</span>]</span><br><span class="line">        headers = self.response.json()[<span class="string">'resultSets'</span>][<span class="number">0</span>][<span class="string">'headers'</span>]</span><br><span class="line">        <span class="keyword">return</span> pd.DataFrame(shots, columns=headers)</span><br></pre></td></tr></table></figure>
+
+<p>当定义<code>Shots</code>类的一个实例时，必须为参数<code>player_id</code>传入一个值，该数值代表球员的编号，如不知道可以参考：<a href="https://raw.githubusercontent.com/savvastj/nbaShotChartsData/master/player_id.csv" target="_blank" rel="noopener">player_id.csv</a>。本文中以Kobe Bryant在2005-06赛季的数据为例，使用方法如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Kobe = Shots(<span class="number">977</span>, season=<span class="string">"2005-06"</span>)</span><br><span class="line">shot_df = Kobe.get_shots()</span><br></pre></td></tr></table></figure>
+
+<h4 id="绘制投篮分布图-1"><a href="#绘制投篮分布图-1" class="headerlink" title="绘制投篮分布图"></a>绘制投篮分布图</h4><p><code>Shorts</code>类的get_shots()方法返回的数据包含了Kobe Bryant在2005-06常规赛期间的所有出手投篮数据，通过如下操作可以提取该数据的头信息：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> IPython.display <span class="keyword">import</span> display</span><br><span class="line"><span class="keyword">with</span> pd.option_context(<span class="string">'display.max_columns'</span>, <span class="literal">None</span>):</span><br><span class="line">    display(shot_df.head())</span><br></pre></td></tr></table></figure>
+
+<p>从结果中可以发现我们需要的数据在LOC_X和LOC_Y 里面，这些坐标值对应每一次出手投篮，然后我们可以把这些坐标绘制到一组表示篮球场的轴上，绘制投篮分布图的函数如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">shot_chart</span><span class="params">(x, y, title=<span class="string">""</span>, kind=<span class="string">"scatter"</span>, color=<span class="string">"b"</span>, cmap=None,</span></span></span><br><span class="line"><span class="function"><span class="params">               xlim=<span class="params">(<span class="number">-250</span>, <span class="number">250</span>)</span>, ylim=<span class="params">(<span class="number">422.5</span>, <span class="number">-47.5</span>)</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">               court_color=<span class="string">"gray"</span>, outer_lines=False, court_lw=<span class="number">1</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">               flip_court=False, kde_shade=True, hex_gridsize=None,</span></span></span><br><span class="line"><span class="function"><span class="params">               ax=None, **kwargs)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Returns an Axes object with player shots plotted.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    TODO: explain the parameters</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ax <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        ax = plt.gca()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> cmap <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        cmap = sns.light_palette(color, as_cmap=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> flip_court:</span><br><span class="line">        ax.set_xlim(xlim)</span><br><span class="line">        ax.set_ylim(ylim)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        ax.set_xlim(xlim[::<span class="number">-1</span>])</span><br><span class="line">        ax.set_ylim(ylim[::<span class="number">-1</span>])</span><br><span class="line"></span><br><span class="line">    ax.tick_params(labelbottom=<span class="string">"off"</span>, labelleft=<span class="string">"off"</span>)</span><br><span class="line">    ax.set_title(title, fontsize=<span class="number">18</span>)</span><br><span class="line"></span><br><span class="line">    draw_court(ax, color=court_color, lw=court_lw, outer_lines=outer_lines)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> kind == <span class="string">"scatter"</span>:</span><br><span class="line">        ax.scatter(x, y, c=color, **kwargs)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">elif</span> kind == <span class="string">"kde"</span>:</span><br><span class="line">        sns.kdeplot(x, y, shade=kde_shade, cmap=cmap, ax=ax, **kwargs)</span><br><span class="line">        ax.set_xlabel(<span class="string">''</span>)</span><br><span class="line">        ax.set_ylabel(<span class="string">''</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">elif</span> kind == <span class="string">"hex"</span>:</span><br><span class="line">        <span class="keyword">if</span> hex_gridsize <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="comment"># Get the number of bins for hexbin using Freedman-Diaconis rule</span></span><br><span class="line">            <span class="comment"># This is idea was taken from seaborn, which got the calculation</span></span><br><span class="line">            <span class="comment"># from http://stats.stackexchange.com/questions/798/</span></span><br><span class="line">            <span class="keyword">from</span> seaborn.distributions <span class="keyword">import</span> _freedman_diaconis_bins</span><br><span class="line">            x_bin = _freedman_diaconis_bins(x)</span><br><span class="line">            y_bin = _freedman_diaconis_bins(y)</span><br><span class="line">            hex_gridsize = int(np.mean([x_bin, y_bin]))</span><br><span class="line"></span><br><span class="line">        ax.hexbin(x, y, gridsize=hex_gridsize, cmap=cmap, **kwargs)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">"kind must be 'scatter', 'kde', or 'hex'."</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ax</span><br></pre></td></tr></table></figure>
+
+<p>使用方法如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">shot_chart(shot_df.LOC_X, shot_df.LOC_Y)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>效果如下：</p>
+<img src="/images/Kobe_shot_chart.png" alt="Kobe_shot_chart" width="760px" />
+
+<h4 id="投篮热力图"><a href="#投篮热力图" class="headerlink" title="投篮热力图"></a>投篮热力图</h4><p>Seaborn是Python中基于matplotlib的统计绘图模块，下面的函数是使用searorn中的<a href="http://stanford.edu/~mwaskom/software/seaborn/generated/seaborn.jointplot.html" target="_blank" rel="noopener"><code>Jointplot()</code></a>函数可以让我们以统计学的方式展示投篮分布图：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">shot_chart_jointplot</span><span class="params">(x, y, data=None, title=<span class="string">""</span>, kind=<span class="string">"scatter"</span>, color=<span class="string">"b"</span>, </span></span></span><br><span class="line"><span class="function"><span class="params">                         cmap=None, xlim=<span class="params">(<span class="number">-250</span>, <span class="number">250</span>)</span>, ylim=<span class="params">(<span class="number">422.5</span>, <span class="number">-47.5</span>)</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                         space=<span class="number">0</span>, court_color=<span class="string">"gray"</span>, outer_lines=False,</span></span></span><br><span class="line"><span class="function"><span class="params">                         court_lw=<span class="number">1</span>, flip_court=False,</span></span></span><br><span class="line"><span class="function"><span class="params">                         set_size_inches=<span class="params">(<span class="number">12</span>, <span class="number">11</span>)</span>, **kwargs)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Returns a seaborn JointGrid using sns.jointplot</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    TODO: Better documentation</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># If a colormap is not provided, then it is based off of the color</span></span><br><span class="line">    <span class="keyword">if</span> cmap <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        cmap = sns.light_palette(color, as_cmap=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    plot = sns.jointplot(x, y, data=<span class="literal">None</span>, stat_func=<span class="literal">None</span>, kind=kind, space=<span class="number">0</span>, color=cmap(<span class="number">0.1</span>), cmap=cmap, **kwargs)</span><br><span class="line"></span><br><span class="line">    plot.fig.set_size_inches(set_size_inches)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment"># A joint plot has 3 Axes, the first one called ax_joint </span></span><br><span class="line">    <span class="comment"># is the one we want to draw our court onto and adjust some other settings</span></span><br><span class="line">    ax = plot.ax_joint</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> flip_court:</span><br><span class="line">        ax.set_xlim(xlim)</span><br><span class="line">        ax.set_ylim(ylim)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        ax.set_xlim(xlim[::<span class="number">-1</span>])</span><br><span class="line">        ax.set_ylim(ylim[::<span class="number">-1</span>])</span><br><span class="line"></span><br><span class="line">    draw_court(ax, color=court_color, lw=court_lw, outer_lines=outer_lines)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Get rid of axis labels and tick marks</span></span><br><span class="line">    ax.set_xlabel(<span class="string">''</span>)</span><br><span class="line">    ax.set_ylabel(<span class="string">''</span>)</span><br><span class="line">    ax.tick_params(labelbottom=<span class="string">'off'</span>, labelleft=<span class="string">'off'</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Add a title</span></span><br><span class="line">    ax.set_title(title, y=<span class="number">-0.1</span>, fontsize=<span class="number">18</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> plot</span><br></pre></td></tr></table></figure>
+
+<p>其中，参数kind可以选择不同的显示样式，可选择的有<code>“scatter”，“reg”，“resid”，“kde”，“hex”</code>，参数<code>cmap</code>为matplotlib配色。示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">shot_chart_jointplot(shot_df.LOC_X, shot_df.LOC_Y, title=<span class="string">"Kobe Bryant FGA \n2005-06 Reg. Season"</span>, kind=<span class="string">"kde"</span>, cmap=plt.cm.YlOrRd_r)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>效果如下：</p>
+<img src="/images/shot_chart_jointplot.png" alt="shot_chart_jointplot" width="760px" />
+
+<hr>
+<h3 id="添加球员头像信息"><a href="#添加球员头像信息" class="headerlink" title="添加球员头像信息"></a>添加球员头像信息</h3><h4 id="获取球员图像"><a href="#获取球员图像" class="headerlink" title="获取球员图像"></a>获取球员图像</h4><p>为了更好的展示，我们可以在投篮热图上加上球员的头像，头像的来源仍然是<a href="http://stats.nba.com/" target="_blank" rel="noopener">stats.nba.com</a>。抓取方式如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> urllib</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_player_img</span><span class="params">(player_id)</span>:</span></span><br><span class="line">    <span class="string">"""Returns the image of the player from stats.nba.com</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Parameters</span></span><br><span class="line"><span class="string">    ----------</span></span><br><span class="line"><span class="string">    player_id: int</span></span><br><span class="line"><span class="string">        The player ID used to find the image.</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    url = <span class="string">"http://stats.nba.com/media/players/230x185/"</span>+str(player_id)+<span class="string">".png"</span></span><br><span class="line">    img_file = str(player_id) + <span class="string">".png"</span></span><br><span class="line">    <span class="keyword">return</span> urllib.urlretrieve(url, img_file)[<span class="number">0</span>]</span><br></pre></td></tr></table></figure>
+
+<p>先看一下效果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">sns.set_style(<span class="string">'white'</span>)</span><br><span class="line">sns.set_color_codes()</span><br><span class="line"></span><br><span class="line">pic = get_player_img(<span class="number">977</span>)</span><br><span class="line">Kobe_img = plt.imread(pic)</span><br><span class="line">plt.imshow(Kobe_img)</span><br></pre></td></tr></table></figure>
+<img src="/images/977.png" alt="Kobe" width="180px" />
+
+<h4 id="带球员头像的投篮热力图"><a href="#带球员头像的投篮热力图" class="headerlink" title="带球员头像的投篮热力图"></a>带球员头像的投篮热力图</h4><p>在获取到球员头像后，我们可以通过使用<code>matplotlib.Offset</code>模块中的<code>OffsetImage</code>函数在我们的投篮热力图的右上角加入球员头像，具体实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">m matplotlib.offsetbox <span class="keyword">import</span>  OffsetImage</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">shot_chart_jointplot_with_player_img</span><span class="params">(x, y, player_img, data=None, title=<span class="string">""</span>, kind=<span class="string">"scatter"</span>, color=<span class="string">"b"</span>, </span></span></span><br><span class="line"><span class="function"><span class="params">                         cmap=None, xlim=<span class="params">(<span class="number">-250</span>, <span class="number">250</span>)</span>, ylim=<span class="params">(<span class="number">422.5</span>, <span class="number">-47.5</span>)</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                         space=<span class="number">0</span>, court_color=<span class="string">"gray"</span>, outer_lines=False,</span></span></span><br><span class="line"><span class="function"><span class="params">                         court_lw=<span class="number">1</span>, flip_court=False,</span></span></span><br><span class="line"><span class="function"><span class="params">                         set_size_inches=<span class="params">(<span class="number">12</span>, <span class="number">11</span>)</span>, **kwargs)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Returns a seaborn JointGrid using sns.jointplot</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    TODO: Better documentation</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># If a colormap is not provided, then it is based off of the color</span></span><br><span class="line">    <span class="keyword">if</span> cmap <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        cmap = sns.light_palette(color, as_cmap=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    plot = sns.jointplot(x, y, data=<span class="literal">None</span>, stat_func=<span class="literal">None</span>, kind=kind, space=<span class="number">0</span>, color=cmap(<span class="number">0.1</span>), cmap=cmap, **kwargs)</span><br><span class="line"></span><br><span class="line">    plot.fig.set_size_inches(set_size_inches)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment"># A joint plot has 3 Axes, the first one called ax_joint </span></span><br><span class="line">    <span class="comment"># is the one we want to draw our court onto and adjust some other settings</span></span><br><span class="line">    ax = plot.ax_joint</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> flip_court:</span><br><span class="line">        ax.set_xlim(xlim)</span><br><span class="line">        ax.set_ylim(ylim)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        ax.set_xlim(xlim[::<span class="number">-1</span>])</span><br><span class="line">        ax.set_ylim(ylim[::<span class="number">-1</span>])</span><br><span class="line"></span><br><span class="line">    draw_court(ax, color=court_color, lw=court_lw, outer_lines=outer_lines)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Get rid of axis labels and tick marks</span></span><br><span class="line">    ax.set_xlabel(<span class="string">''</span>)</span><br><span class="line">    ax.set_ylabel(<span class="string">''</span>)</span><br><span class="line">    ax.tick_params(labelbottom=<span class="string">'off'</span>, labelleft=<span class="string">'off'</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Add a title</span></span><br><span class="line">    ax.set_title(title, y=<span class="number">-0.1</span>, fontsize=<span class="number">18</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># First create our OffSetImage by passing in our image</span></span><br><span class="line">    <span class="comment"># and set the zoom level to make the image small enough </span></span><br><span class="line">    <span class="comment"># to fit on our plot</span></span><br><span class="line">    img = OffsetImage(player_img, zoom=<span class="number">0.6</span>)</span><br><span class="line">    <span class="comment"># Pass in a tuple of x,y coordinates to set_offset</span></span><br><span class="line">    <span class="comment"># to place the plot where you want, I just played around</span></span><br><span class="line">    <span class="comment"># with the values until I found a spot where I wanted</span></span><br><span class="line">    <span class="comment"># the image to be</span></span><br><span class="line">    img.set_offset((<span class="number">992</span>,<span class="number">914</span>))</span><br><span class="line">    <span class="comment"># add the image</span></span><br><span class="line">    ax.add_artist(img)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> plot</span><br></pre></td></tr></table></figure>
+<p>使用示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">shot_chart_jointplot_with_player_img(shot_df.LOC_X, shot_df.LOC_Y, Kobe_img, title=<span class="string">"Kobe Bryant FGA \n2005-06 Reg. Season"</span>, kind=<span class="string">"kde"</span>, cmap=plt.cm.YlOrRd_r)</span><br><span class="line">plt.savefig(<span class="string">'Kobe_shot_chart_jointplot_with_player_img.png'</span>)</span><br></pre></td></tr></table></figure>
+
+<p>效果如下图：</p>
+<img src="/images/Kobe_shot_chart_jointplot_with_player_img.png" alt="Kobe_shot_chart_jointplot_with_player_img" width="760px" />
+
+      
+      <!-- reward -->
+      
+    </div>
+    
+    
+      <!-- copyright -->
+      
+    <footer class="article-footer">
+      
+          
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://supresu.github.io/2015/08/29/create-NBA-shot-chart-in-pathon/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/NBA/" rel="tag">NBA</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Python/" rel="tag">Python</a></li></ul>
+
+
+    </footer>
+
+  </div>
+
+  
+  
+  <nav class="article-nav">
+    
+      <a href="/2019/02/20/redis_vs_memcached/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Redis vs Memcached
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2015/08/04/kmp/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">KMP和扩展KMP算法</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+  
+<!-- valine评论 -->
+<div id="vcomments-box">
+    <div id="vcomments">
+    </div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/valine@1.3.10/dist/Valine.min.js'></script>
+<script>
+    new Valine({
+        el: '#vcomments',
+        app_id: '',
+        app_key: '',
+        path: window.location.pathname,
+        notify: 'false',
+        verify: 'false',
+        avatar: 'mp',
+        placeholder: '给我的文章加点评论吧~',
+        recordIP: true
+    });
+    const infoEle = document.querySelector('#vcomments .info');
+    if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+        infoEle.childNodes.forEach(function (item) {
+            item.parentNode.removeChild(item);
+        });
+    }
+</script>
+<style>
+    #vcomments-box {
+        padding: 5px 30px;
+    }
+
+    @media screen and (max-width: 800px) {
+        #vcomments-box {
+            padding: 5px 0px;
+        }
+    }
+
+    #vcomments-box #vcomments {
+        background-color: #fff;
+    }
+
+    .v .vlist .vcard .vh {
+        padding-right: 20px;
+    }
+
+    .v .vlist .vcard {
+        padding-left: 10px;
+    }
+</style>
+
+  
+
+  
+  
+  
+
+</article>
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul class="list-inline">
+      <li>
+        &copy;
+        2015-2020
+        SU Liangjian
+      </li>
+      <li>
+        
+        Powered by
+        
+        
+        <a href="https://hexo.io" target="_blank">Hexo</a> Theme <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul class="list-inline">
+      <li>
+        
+      </li>
+      
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="to_top">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+      </div>
+    </main>
+    <aside class="sidebar">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/zhazha.jpeg" alt="炸炸是个呼噜怪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/about_zhazha.html">关于炸炸</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/share.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+    onClick: (e) => {
+      $('.toc-link').removeClass('is-active-link');
+      $(`a[href=${e.target.hash}]`).addClass('is-active-link');
+      $(e.target.hash).scrollIntoView();
+      return false;
+    }
+  });
+</script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/js/ayer.js"></script>
+
+
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+
+
+<script type="text/javascript" src="https://js.users.51.la/20544303.js"></script>
+
+    
+  </div>
+</body>
+
+</html>
