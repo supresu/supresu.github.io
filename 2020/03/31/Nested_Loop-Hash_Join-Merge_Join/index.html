@@ -6,7 +6,7 @@
     
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>
-    B树，B+树及LSM树对比 |  炸炸是个呼噜怪
+    Nested-Loop Join，Hash Join，Sort Merge Join |  炸炸是个呼噜怪
   </title>
   <meta name="generator" content="hexo-theme-yilia-plus">
   
@@ -30,7 +30,7 @@
   <div id="app">
     <main class="content">
       <section class="outer">
-  <article id="post-btree_b+tree_lsm" class="article article-type-post" itemscope
+  <article id="post-Nested_Loop-Hash_Join-Merge_Join" class="article article-type-post" itemscope
   itemprop="blogPost" data-scroll-reveal>
 
   <div class="article-inner">
@@ -38,7 +38,7 @@
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  B树，B+树及LSM树对比
+  Nested-Loop Join，Hash Join，Sort Merge Join
 </h1>
   
 
@@ -47,12 +47,12 @@
 
     
     <div class="article-meta">
-      <a href="/2020/03/22/btree_b+tree_lsm/" class="article-date">
-  <time datetime="2020-03-22T06:16:23.000Z" itemprop="datePublished">2020-03-22</time>
+      <a href="/2020/03/31/Nested_Loop-Hash_Join-Merge_Join/" class="article-date">
+  <time datetime="2020-03-31T13:16:23.000Z" itemprop="datePublished">2020-03-31</time>
 </a>
       
   <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">数据结构</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a>
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a> / <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a>
   </div>
 
       
@@ -62,7 +62,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">1.7k字</span>
+            <span class="post-count">1.2k字</span>
         </span>
     </span>
 
@@ -71,7 +71,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">5分钟</span>
+            <span class="post-count">4分钟</span>
         </span>
     </span>
 </div>
@@ -96,74 +96,59 @@
       
 
       
-      <p>对开发人员来说熟悉数据库是一项非常重要的技能，为了保证数据库的性能 B树、B+树、LSM树广泛应用在了各种数据库产品中。<code>B树</code>和<code>B+树</code>一般应用于文件存储系统以及数据库系统中，如我们非常常见的 Mysql InnoDB 引擎就是采用了B+树实现的索引结构；<code>LSM树</code>则在诸如 <a href="http://hbase.apache.org/" target="_blank" rel="noopener">Apache HBase</a>、<a href="https://cassandra.apache.org/" target="_blank" rel="noopener">Apache Cassandra</a>、<a href="https://blog.csdn.net/baijiwei/article/details/80506121" target="_blank" rel="noopener">MongoDB 的 Wired Tiger 存储引擎</a>、<a href="https://blog.csdn.net/Double2hao/article/details/90107904" target="_blank" rel="noopener">LevelDB</a>、<a href="https://rocksdb.org.cn/" target="_blank" rel="noopener">RocksDB</a>、<a href="https://pingcap.com/index.html" target="_blank" rel="noopener">TiDB</a> 等产品中都有应用。</p>
+      <p>我们都知道 MySQL 8 中推出了一种新的算法 Hash Join，大家对这个新特性也都非常的兴奋，那究竟什么是 Hash Join 呢，它比现在 MySQL 使用的 Nested-Loop Join 有什么优势呢，下面我们将介绍一下数据库中常用的三个 join 算法（Nested-Loop Join、Hash Join、Sort Merge Join）以及它们之前的区别和联系。</p>
 <a id="more"></a>
 
+<h2 id="Nested-Loop-Join"><a href="#Nested-Loop-Join" class="headerlink" title="Nested-Loop Join"></a>Nested-Loop Join</h2><p>Nested-Loop 是通过两层循环，用第一张表做 Outter Loop，第二张表做 Inner Loop，Outter Loop 的每一条记录跟 Inner Loop 的记录作比较，符合条件的就输出。Nested-Loop Join 又有 3 种细分的算法：</p>
+<h3 id="Simple-Nested-Loop-Join（SNLJ）"><a href="#Simple-Nested-Loop-Join（SNLJ）" class="headerlink" title="Simple Nested-Loop Join（SNLJ）"></a>Simple Nested-Loop Join（SNLJ）</h3><p>SNLJ 就是两层循环全量扫描连接的两张表，得到符合条件的两条记录则输出，这也就是让两张表做笛卡尔积，比较次数是 R * S，是比较暴力的算法，会比较耗时。</p>
+<p><img src="/images/join/snlj.webp" alt="snlj"></p>
+<h3 id="Index-Nested-Loop-Join（INLJ）"><a href="#Index-Nested-Loop-Join（INLJ）" class="headerlink" title="Index Nested-Loop Join（INLJ）"></a>Index Nested-Loop Join（INLJ）</h3><p>INLJ 是在 SNLJ 的基础上做了优化，通过连接条件确定可用的索引，在 Inner Loop 中扫描索引而不去扫描数据本身，从而提高 Inner Loop 的效率。<br>而 INLJ 也有缺点，就是如果扫描的索引是非聚簇索引，并且需要访问非索引的数据，会产生一个回表读取数据的操作，这就多了一次随机的 I/O 操作。</p>
+<p><img src="/images/join/inlj.webp" alt="inlj"></p>
+<h3 id="Block-Nested-Loop-Join（BNLJ）"><a href="#Block-Nested-Loop-Join（BNLJ）" class="headerlink" title="Block Nested-Loop Join（BNLJ）"></a>Block Nested-Loop Join（BNLJ）</h3><p>一般情况下，MySQL 优化器在索引可用的情况下，会优先选择使用 INLJ 算法，但是在无索引可用或者判断 full scan 可能比使用索引更快的情况下，还是不会选择使用过于粗暴的 SNLJ 算法。<br>这里就出现了 BNLJ 算法了，BNLJ 在 SNLJ 的基础上使用了 <code>join buffer</code>，会提前读取 Inner Loop 所需要的记录到 buffer 中，以提高 Inner Loop 的效率。</p>
+<p><img src="/images/join/bnlj.webp" alt="bnlj"></p>
 <hr>
-<h2 id="B树"><a href="#B树" class="headerlink" title="B树"></a>B树</h2><p>全称 Balance-tree（平衡多路查找树），<code>平衡</code> 的意思是左边和右边分布均匀；<code>多路</code>的意思是相对于二叉树而言的，二叉树就是二路查找树，查找时只有两条路，而 B树 有多条路，即父节点有多个子节点。</p>
-<p>B树是为磁盘或其它直接存取的辅助存储设备而设计的一种平衡搜索树，它类似于红黑树，但它在降低磁盘 I/O 操作上更好。</p>
-<h3 id="结构特点"><a href="#结构特点" class="headerlink" title="结构特点"></a>结构特点</h3><p>名词介绍</p>
-<blockquote>
-<ul>
-<li><strong>阶</strong>：一棵 m 阶 B-tree，每个结点至多可以拥有 m 个子结点，即遍观整棵树，子节点最多的个数是 m，那么这棵树就是 m 阶树。</li>
-<li><strong>度</strong>：树的度就是树的高度，即树的层数。</li>
-</ul>
-</blockquote>
-<h4 id="特性"><a href="#特性" class="headerlink" title="特性"></a>特性</h4><ul>
-<li>根节点至少有两个子节点</li>
-<li>每个中间节点都包含 k-1 个数据和 k 个孩子，其中 m/2 &lt;= k &lt;= m</li>
-<li>每个叶子节点都包含 k-1 个数据，其中 m/2 &lt;= k &lt;= m</li>
-<li>所有的叶子结点都位于同一层</li>
-<li>每个节点中的数据都按照从小到大的顺序排列，每个数据左子树中的所有数据都小于它，而右子树中的所有数据都大于它</li>
-</ul>
-<p><img src="/images/20200322/B-tree.png" alt="b-tree"></p>
-<h3 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h3><p>优点：</p>
-<ul>
-<li>使用层次化的索引来最小化磁盘读取</li>
-<li>使用不完全填充的块来加速插入和删除</li>
-<li>通过优雅的遍历算法来保持索引平衡</li>
-</ul>
-<p>缺点：</p>
-<ul>
-<li>每个节点中既要存索引信息，又要存其对应的数据，如果数据很大，那么当树的体量很大时，每次读到内存中的树的信息就会不太够</li>
-<li>B树遍历整个树的过程和二叉树本质上是一样的，B树相对二叉树虽然提高了磁盘IO性能，但并没有解决遍历元素效率低下的问题</li>
-</ul>
+<h2 id="Sort-Merge-Join"><a href="#Sort-Merge-Join" class="headerlink" title="Sort Merge Join"></a>Sort Merge Join</h2><p>Sort Merge Join 又叫 Merge Join，简单说来就是将 Join 的两个表，首先根据连接属性进行排序，然后进行一次扫描归并, 进而就可以得出最后的结果。从改算法的特性可以看出，该算法最大的消耗在于对内外表数据进行排序，而当连接列为索引列时，我们可以利用索引的有序性避免排序带来的消耗。</p>
 <hr>
-<h2 id="B-树"><a href="#B-树" class="headerlink" title="B+树"></a>B+树</h2><p>B树的变体，它把所有的数据都存储在叶节点中，中间节点只存放 <code>关键字</code> 和 <code>子节点指针</code>，因此最大化了中间节点的分支因子，所以B+树的遍历也更加高效(<code>B树需要以中序的方式遍历节点，而B+树只需把所有叶子节点串成链表就可以从头到尾遍历</code>)。</p>
-<h3 id="结构特点-1"><a href="#结构特点-1" class="headerlink" title="结构特点"></a>结构特点</h3><p>一棵 B+ 树需要满足以下条件：</p>
-<ul>
-<li>节点的子树数和关键字数相同</li>
-<li>节点的关键字表示的是子树中的最大数，在子树中同样含有这个数据</li>
-<li>叶子节点包含了全部数据，同时符合左小右大的顺序</li>
-</ul>
-<p><img src="/images/20200322/Bplustree.png" alt="Bplustree"></p>
-<h3 id="优缺点-1"><a href="#优缺点-1" class="headerlink" title="优缺点"></a>优缺点</h3><p>优点：</p>
-<ul>
-<li>中间节点不包含数据，同样大小的磁盘页可以容纳更多的节点元素，这就意味着在数据量相同的情况下，B+树更加的矮胖，因此IO的次数也就较少</li>
-<li>B+树查询必须查找到叶子节点，每一次查找都是稳定的</li>
-<li>所有叶子节点形成有序链表，便于范围查询，远远高于B树</li>
-</ul>
-<p>缺点：<br>在一些情况下会产生大量的随机IO，如</p>
-<ul>
-<li>主键不是有序递增的，导致每次插入数据产生大量的数据迁移和空间碎片</li>
-<li>使主键是有序递增的，大量写请求的分布仍是随机的</li>
-</ul>
+<h2 id="Hash-Join"><a href="#Hash-Join" class="headerlink" title="Hash Join"></a>Hash Join</h2><p>Hash Join 可以在被驱动表没有索引的情况下进行快速的连接并查询，优化器使用两个表中较小（相对较小）的表利用 Join Key 在内存中建立散列表，然后扫描较大的表并探测散列表，找出与 Hash 表匹配的行。这种方式适用于较小的表完全可以放于内存中的情况，这样总成本就是访问两个表的成本之和。但是在表很大的情况下并不能完全放入内存，这时优化器会将它分割成若干不同的分区，不能放入内存的部分就把该分区写入磁盘的临时段，此时要求有较大的临时段从而尽量提高 I/O 的性能。它能够很好的工作于没有索引的大表和并行查询的环境中，并提供最好的性能。Hash Join 只能应用于等值连接(如WHERE A.COL3 = B.COL4)，这是由 Hash 的特点决定的。</p>
+<p>详细的执行过程见：<a href="https://www.jianshu.com/p/29eeb3ec4bc2" target="_blank" rel="noopener">技术分享 | Hash join in MySQL 8</a></p>
 <hr>
-<h2 id="LSM-树"><a href="#LSM-树" class="headerlink" title="LSM 树"></a>LSM 树</h2><p>即日志结构合并树(Log-Structured Merge-Tree)，传统关系型数据库使用b树或一些变体作为存储结构，能高效进行查找。但保存在磁盘中时它也有一个明显的缺陷，那就是逻辑上相离很近但物理却可能相隔很远，这就可能造成大量的磁盘随机读写。随机读写比顺序读写慢很多，为了提升IO性能，我们需要一种能将随机操作变为顺序操作的机制，于是便有了 LSM 树。<code>LSM 树能让我们进行顺序写磁盘，从而大幅提升写操作，作为代价的是牺牲了一些读性能</code>。</p>
-<h3 id="结构特点-2"><a href="#结构特点-2" class="headerlink" title="结构特点"></a>结构特点</h3><p>LSM 树使用两部分类树的数据结构存储数据，并同时提供查询。其中一部分数据结构（C0）存于内存中（memtable），<code>负责接受新的数据插入、更新及查询的请求，并直接在内存中对数据进行排序</code>；另一部分数据结构（C1）存于硬盘上，由 C0 写入磁盘（sstable）而成，<code>主要提供读的操作，特点是有序且不会被修改</code>；LSM 树会使用日志文件（commit log）来为<code>数据恢复</code>提供保障。</p>
-<img src="/images/20200322/LSM.jpg" width="300px" align=center>
-
-<p>三类数据结构的协作顺序是：<code>所有新插入和更新操作先被记录到 commit log，最后达到一定条件时会从 memtable 写入 sstable，并抛弃相关的 log 数据</code>；</p>
-<h3 id="优缺点-2"><a href="#优缺点-2" class="headerlink" title="优缺点"></a>优缺点</h3><p>这种数据结构的特点：非常适合数据的快速写入，但不利于读，因此 LSM 树采用了以下策略：</p>
-<ul>
-<li>定期将硬盘上小的 sstable 合并（Merge）成大的 sstable，以减少 sstable 数量，合并时也会将重复的操作或合并或更新去重</li>
-<li>对每个 sstable 使用布隆过滤器（Bloom filter），以加速对数据在该 sstable 的存在性进行判定，从而减少数据查询的总时间</li>
-</ul>
-<p>WTable 为58同城基于 RocksDB 实现的一个高性能 Key Value 存储平台，针对 LSM 树的 Compaction 问题做了一些优化，详情可以阅读《<a href="https://tech.58.com/#/article?id=27" target="_blank" rel="noopener">58同城RocksDB使用技巧之分布式存储扩容演进</a>》。</p>
-<p>字节跳动内部大量的数据库产品（如图数据库、NewSQL 等）都构建在 RocksDB 之上，也对 RocksDB 存储引擎做了几方面的改进，详情可以阅读《<a href="https://www.toutiao.com/i6806261982442816013/?tt_from=weixin&utm_campaign=client_share&wxshare_count=1&timestamp=1585061583&app=news_article&utm_source=weixin&utm_medium=toutiao_android&req_id=202003242253030101300371380A1BEEC8&group_id=6806261982442816013" target="_blank" rel="noopener">字节跳动在 RocksDB 存储引擎上的改进实践</a>》。</p>
+<h2 id="几种-JOIN-算法对比"><a href="#几种-JOIN-算法对比" class="headerlink" title="几种 JOIN 算法对比"></a>几种 JOIN 算法对比</h2><table>
+<thead>
+<tr>
+<th>join 算法</th>
+<th>Nested-Loop Join</th>
+<th>Merge Join</th>
+<th>Hash Join</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>使用条件</td>
+<td>任何条件</td>
+<td>等值或非等值连接(&gt;，&lt;，=，&gt;=，&lt;=)，‘&lt;&gt;’除外</td>
+<td>等值连接（=）</td>
+</tr>
+<tr>
+<td>相关资源</td>
+<td>CPU、磁盘I/O</td>
+<td>内存、临时空间</td>
+<td>内存、临时空间</td>
+</tr>
+<tr>
+<td>特点</td>
+<td>当有高选择性索引或进行限制性搜索时效率比较高，能够快速返回第一次的搜索结果</td>
+<td>当缺乏索引或者索引条件模糊时，Merge Join 比 Nested Loop 有效。非等值连接时，Merge Join比 Hash Join 更有效</td>
+<td>当缺乏索引或者索引条件模糊时，Hash Join 比 Nested Loop 有效。通常比 Merge Join 快。在数据仓库环境下，如果表的纪录数多，效率高</td>
+</tr>
+<tr>
+<td>缺点</td>
+<td>当索引丢失或者查询条件限制不够时，效率很低；当表的纪录数多时，效率低</td>
+<td>所有的表都需要排序。它为最优化的吞吐量而设计，并且在结果没有全部找到前不返回数据</td>
+<td>建立哈希表需要大量内存，第一次的结果返回较慢</td>
+</tr>
+</tbody></table>
 <hr>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><blockquote>
-<p><a href="https://www.zhihu.com/question/19887265" target="_blank" rel="noopener">https://www.zhihu.com/question/19887265</a><br><a href="https://www.jianshu.com/p/3fb899684392" target="_blank" rel="noopener">https://www.jianshu.com/p/3fb899684392</a><br><a href="https://blog.csdn.net/u010916338/article/details/86134334" target="_blank" rel="noopener">https://blog.csdn.net/u010916338/article/details/86134334</a><br><a href="https://zh.wikipedia.org/wiki/B%E6%A0%91" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/B%E6%A0%91</a><br><a href="https://zh.wikipedia.org/wiki/B%2B%E6%A0%91" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/B%2B%E6%A0%91</a><br><a href="https://www.cnblogs.com/nullzx/p/8729425.html" target="_blank" rel="noopener">https://www.cnblogs.com/nullzx/p/8729425.html</a><br><a href="https://blog.csdn.net/yangguosb/article/details/81903583" target="_blank" rel="noopener">https://blog.csdn.net/yangguosb/article/details/81903583</a></p>
+<p><a href="http://www.jasongj.com/2015/03/07/Join1/" target="_blank" rel="noopener">http://www.jasongj.com/2015/03/07/Join1/</a><br><a href="https://www.jianshu.com/p/741a6d4efc44" target="_blank" rel="noopener">https://www.jianshu.com/p/741a6d4efc44</a><br><a href="https://zhuanlan.zhihu.com/p/41535500" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/41535500</a><br><a href="https://zhuanlan.zhihu.com/p/94065716" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/94065716</a><br><a href="https://www.jianshu.com/p/d128fef9e747" target="_blank" rel="noopener">https://www.jianshu.com/p/d128fef9e747</a></p>
 </blockquote>
 
       
@@ -219,14 +204,14 @@
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://supresu.github.io/2020/03/22/btree_b+tree_lsm/" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://supresu.github.io/2020/03/31/Nested_Loop-Hash_Join-Merge_Join/" alt="微信分享二维码">
     </div>
 </div>
 
 <div id="share-mask"></div>
       
       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/B-%E6%A0%91/" rel="tag">B+树</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/B%E6%A0%91/" rel="tag">B树</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/LSM%E6%A0%91/" rel="tag">LSM树</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hash-Join/" rel="tag">Hash Join</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Nested-Loop-Join/" rel="tag">Nested-Loop Join</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Sort-Merge-Join/" rel="tag">Sort Merge Join</a></li></ul>
 
 
     </footer>
@@ -237,19 +222,10 @@
   
   <nav class="article-nav">
     
-      <a href="/2020/03/31/Nested_Loop-Hash_Join-Merge_Join/" class="article-nav-link">
-        <strong class="article-nav-caption">上一篇</strong>
-        <div class="article-nav-title">
-          
-            Nested-Loop Join，Hash Join，Sort Merge Join
-          
-        </div>
-      </a>
     
-    
-      <a href="/2020/03/19/zhazha_read_code/" class="article-nav-link">
+      <a href="/2020/03/22/btree_b+tree_lsm/" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
-        <div class="article-nav-title">程序猫炸炸</div>
+        <div class="article-nav-title">B树，B+树及LSM树对比</div>
       </a>
     
   </nav>
