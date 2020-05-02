@@ -197,16 +197,29 @@
 <hr>
 <h2 id="Java-8-升级到-Java-11-带来的改变"><a href="#Java-8-升级到-Java-11-带来的改变" class="headerlink" title="Java 8 升级到 Java 11 带来的改变"></a>Java 8 升级到 Java 11 带来的改变</h2><p>基于开源规划调度引擎 OptaPlanner 官网发布的 <a href="https://www.optaplanner.org/blog/2019/01/17/HowMuchFasterIsJava11.html" target="_blank" rel="noopener">Java 11 GC 性能基准测试报告</a> 显示，平均而言，仅通过切换到 Java 11 就有 16％ 的性能提升，这种提升可能是因为 Java 10 中引入了 <a href="https://openjdk.java.net/jeps/307" target="_blank" rel="noopener">JEP 307: Parallel Full GC for G1</a>。</p>
 <p>那么主要有哪些改进的特性呢：</p>
-<h3 id="本地变量类型推断"><a href="#本地变量类型推断" class="headerlink" title="本地变量类型推断"></a>本地变量类型推断</h3><p>变量类型推断就是左边的类型直接使用 var 定义，而不用写具体的类型，编译器能根据右边的表达式自动推断类型：</p>
+<h3 id="本地变量类型推断"><a href="#本地变量类型推断" class="headerlink" title="本地变量类型推断"></a>本地变量类型推断</h3><blockquote>
+<p>@since 9</p>
+</blockquote>
+<p>变量类型推断就是左边的类型直接使用 var 定义，而不用写具体的类型，编译器能根据右边的表达式自动推断类型：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> javastack = <span class="string">"javastack"</span>;</span><br></pre></td></tr></table></figure>
 <p>等价于</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">String javastack = <span class="string">"javastack"</span>;</span><br></pre></td></tr></table></figure>
 
-<h3 id="紧凑型的字符串"><a href="#紧凑型的字符串" class="headerlink" title="紧凑型的字符串"></a>紧凑型的字符串</h3><p>从 Java 9 开始 String 数据承载由 char[] 改为 byte[] 紧凑的字符串，在很多时候只包含 Latin-1 里的字符，这些字符可节省一半内存。</p>
+<h3 id="紧凑型的字符串"><a href="#紧凑型的字符串" class="headerlink" title="紧凑型的字符串"></a>紧凑型的字符串</h3><blockquote>
+<p>@since 9</p>
+</blockquote>
+<p>从 Java 9 开始 String 数据承载由 char[] 改为 byte[] 紧凑的字符串，在很多时候只包含 Latin-1 里的字符，这些字符可节省一半内存。</p>
 <h3 id="增强-api"><a href="#增强-api" class="headerlink" title="增强 api"></a>增强 api</h3><ul>
-<li><p>字符串增强 @since 11</p>
+<li><p>字符串增强 </p>
+<blockquote>
+<p>@since 11</p>
+</blockquote>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 判断字符串是否为空白</span></span><br><span class="line"><span class="string">" "</span>.isBlank(); <span class="comment">// true</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 去除首尾空白</span></span><br><span class="line"><span class="string">" Javastack "</span>.strip(); <span class="comment">// "Javastack"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 去除尾部空格</span></span><br><span class="line"><span class="string">" Javastack "</span>.stripTrailing(); <span class="comment">// " Javastack"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 去除首部空格</span></span><br><span class="line"><span class="string">" Javastack "</span>.stripLeading(); <span class="comment">// "Javastack "</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 复制字符串</span></span><br><span class="line"><span class="string">"Java"</span>.repeat(<span class="number">3</span>);<span class="comment">// "JavaJavaJava"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 行数统计</span></span><br><span class="line"><span class="string">"A\nB\nC"</span>.lines().count(); <span class="comment">// 3</span></span><br></pre></td></tr></table></figure></li>
-<li><p>集合增强 @since 9<br>从Java 9 开始，jdk 里面就为集合（List、Set、Map）增加了 of（since 9）和 copyOf（since 10）方法。它们用来创建不可变集合。</p>
+<li><p>集合增强</p>
+<blockquote>
+<p>@since 9</p>
+</blockquote>
+<p>从Java 9 开始，jdk 里面就为集合（List、Set、Map）增加了 of（since 9）和 copyOf（since 10）方法。它们用来创建不可变集合。</p>
 <p>示例 1：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> list = List.of(<span class="string">"Java"</span>, <span class="string">"Python"</span>, <span class="string">"C"</span>);</span><br><span class="line"><span class="keyword">var</span> copy = List.copyOf(list);</span><br><span class="line">System.out.println(list == copy);  <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
 <p>示例 2：</p>
@@ -215,7 +228,11 @@
 <p>使用 of 和 copyOf 创建的集合为不可变集合，不能进行添加、删除、替换、排序等操作，不然会报 java.lang.UnsupportedOperationException 异常；使用 Set.of() 不能出现重复元素、Map.of()不能出现重复 key，否则会报 java.lang.IllegalArgumentException。</p>
 </blockquote>
 </li>
-<li><p>Stream 增强 @since 9<br>Stream 是Java 8 中的特性，在 Java 9 中为其新增了 4 个方法</p>
+<li><p>Stream 增强</p>
+<blockquote>
+<p>@since 9</p>
+</blockquote>
+<p>Stream 是Java 8 中的特性，在 Java 9 中为其新增了 4 个方法</p>
 <ul>
 <li>ofNullable(T t)<br>此方法可以接收null来创建一个空流<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 以前</span></span><br><span class="line">Stream.of(<span class="keyword">null</span>); <span class="comment">//报错</span></span><br><span class="line"><span class="comment">// 现在</span></span><br><span class="line">Stream.ofNullable(<span class="keyword">null</span>);</span><br></pre></td></tr></table></figure></li>
 <li>takeWhile(Predicate&lt;? super T&gt; predicate)<br>此方法根据 Predicate 接口来判断如果为 true 就取出 来生成一个新的流，只要碰到 false 就终止，不管后边的元素是否符合条件。<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; integerStream = Stream.of(<span class="number">6</span>, <span class="number">10</span>, <span class="number">11</span>, <span class="number">15</span>, <span class="number">20</span>);</span><br><span class="line">Stream&lt;Integer&gt; takeWhile = integerStream.takeWhile(t -&gt; t % <span class="number">2</span> == <span class="number">0</span>);</span><br><span class="line">takeWhile.forEach(System.out::println); <span class="comment">// 6,10</span></span><br></pre></td></tr></table></figure></li>
@@ -224,19 +241,33 @@
 现在重载后这个方法增加了个判断参数<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; iterate = Stream.iterate(<span class="number">1</span>, i -&gt; i &lt;= <span class="number">5</span>, i -&gt; i + <span class="number">1</span>);</span><br><span class="line">iterate.forEach(System.out::println); <span class="comment">//1,2,3,4,5</span></span><br></pre></td></tr></table></figure></li>
 </ul>
 </li>
-<li><p>Optional 增强 @since 9</p>
+<li><p>Optional 增强</p>
+<blockquote>
+<p>@since 9</p>
+</blockquote>
 <ul>
 <li>stream()<br>如果为空返回一个空流，如果不为空将Optional的值转成一个流。<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//返回Optional值的流</span></span><br><span class="line">Stream&lt;String&gt; stream = Optional.of(<span class="string">"Java 11"</span>).stream();</span><br><span class="line">stream.forEach(System.out::println); <span class="comment">// Java 11</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//返回空流</span></span><br><span class="line">Stream&lt;Object&gt; stream = Optional.ofNullable(<span class="keyword">null</span>).stream();</span><br><span class="line">stream.forEach(System.out::println); <span class="comment">//</span></span><br></pre></td></tr></table></figure></li>
 <li>ifPresentOrElse(Consumer&lt;? super T&gt; action, Runnable emptyAction)<br>如果一个 Optional 包含值，则对其包含的值调用函数 action，即 action.accept(value)，这与 ifPresent 一致；与 ifPresent 方法的区别在于，ifPresentOrElse 还有第二个参数 emptyAction —— 如果 Optional 不包含值，那么 ifPresentOrElse 便会调用 emptyAction，即 emptyAction.run()。<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Optional&lt;Integer&gt; optional = Optional.of(<span class="number">1</span>);</span><br><span class="line">optional.ifPresentOrElse( x -&gt; System.out.println(<span class="string">"Value: "</span> + x),() -&gt;</span><br><span class="line">System.out.println(<span class="string">"Not Present."</span>)); <span class="comment">//Value: 1</span></span><br><span class="line"></span><br><span class="line">optional = Optional.empty();</span><br><span class="line">optional.ifPresentOrElse( x -&gt; System.out.println(<span class="string">"Value: "</span> + x),() -&gt;</span><br><span class="line">System.out.println(<span class="string">"Not Present."</span>)); <span class="comment">//Not Present.</span></span><br></pre></td></tr></table></figure></li>
 <li>or(Supplier&lt;? extends Optional&lt;? extends T&gt;&gt; supplier)<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Optional&lt;String&gt; optional1 = Optional.of(<span class="string">"Java"</span>);</span><br><span class="line">Supplier&lt;Optional&lt;String&gt;&gt; supplierString = () -&gt; Optional.of(<span class="string">"Not Present"</span>);</span><br><span class="line">optional1 = optional1.or( supplierString);</span><br><span class="line">optional1.ifPresent( x -&gt; System.out.println(<span class="string">"Value: "</span> + x)); <span class="comment">//Value: Java</span></span><br><span class="line">optional1 = Optional.empty();</span><br><span class="line">optional1 = optional1.or( supplierString);</span><br><span class="line">optional1.ifPresent( x -&gt; System.out.println(<span class="string">"Value: "</span> + x)); <span class="comment">//Value: Not Present</span></span><br></pre></td></tr></table></figure></li>
 </ul>
 </li>
-<li><p>InputStream 增强 @since 9</p>
+<li><p>InputStream 增强 </p>
+<blockquote>
+<p>@since 9</p>
+</blockquote>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">String lxs = <span class="string">"java"</span>;</span><br><span class="line"><span class="keyword">try</span> (<span class="keyword">var</span> inputStream = <span class="keyword">new</span> ByteArrayInputStream(lxs.getBytes());</span><br><span class="line">  <span class="keyword">var</span> outputStream = <span class="keyword">new</span> ByteArrayOutputStream()) &#123;</span><br><span class="line">  inputStream.transferTo(outputStream);</span><br><span class="line">  System.out.println(outputStream); <span class="comment">// java</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p>HTTP Client API @since 11<br>支持同步和异步两种方式，下面是两种方式的示例：</p>
+<li><p>HTTP Client API</p>
+<blockquote>
+<p>@since 11</p>
+</blockquote>
+<p>支持同步和异步两种方式，下面是两种方式的示例：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">var</span> request = HttpRequest.newBuilder()</span><br><span class="line">.uri(URI.create(<span class="string">"https://www.58.com/"</span>))</span><br><span class="line">.build();</span><br><span class="line"> </span><br><span class="line"> <span class="keyword">var</span> client = HttpClient.newHttpClient();</span><br><span class="line"></span><br><span class="line"> <span class="comment">// 同步</span></span><br><span class="line"> HttpResponse&lt;String&gt; response = client.send(request, HttpResponse.BodyHandlers.ofString());</span><br><span class="line"> System.out.println(response.body());</span><br><span class="line"> </span><br><span class="line"> <span class="comment">// 异步</span></span><br><span class="line"> CompletableFuture&lt;HttpResponse&lt;String&gt;&gt; sendAsync = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());</span><br><span class="line"> <span class="comment">//这里会阻塞</span></span><br><span class="line"> HttpResponse&lt;String&gt; response1 = sendAsync.get();</span><br><span class="line"> System.out.println(response1.body());</span><br></pre></td></tr></table></figure>
 </li>
-<li><p>完全支持Linux容器（包括docker） @since 10<br>许多运行在 Java 虚拟机中的应用程序（包括 Apache Spark 和 Kafka 等数据服务以及传统的企业应用程序）都可以在 Docker 容器中运行。但是在 Docker 容器中运行 Java 应用程序一直存在一个问题，那就是在容器中运行 JVM 程序在设置内存大小和 CPU 使用率后，会导致应用程序的性能下降。这是因为 Java 应用程序没有意识到它正在容器中运行。随着 Java 10 的发布，这个问题总算得以解决，JVM 现在可以识别由容器控制组（cgroups）设置的约束。可以在容器中使用内存和 CPU 约束来直接管理 Java 应用程序，其中包括：</p>
+<li><p>完全支持Linux容器（包括docker）</p>
+<blockquote>
+<p>@since 10</p>
+</blockquote>
+<p>许多运行在 Java 虚拟机中的应用程序（包括 Apache Spark 和 Kafka 等数据服务以及传统的企业应用程序）都可以在 Docker 容器中运行。但是在 Docker 容器中运行 Java 应用程序一直存在一个问题，那就是在容器中运行 JVM 程序在设置内存大小和 CPU 使用率后，会导致应用程序的性能下降。这是因为 Java 应用程序没有意识到它正在容器中运行。随着 Java 10 的发布，这个问题总算得以解决，JVM 现在可以识别由容器控制组（cgroups）设置的约束。可以在容器中使用内存和 CPU 约束来直接管理 Java 应用程序，其中包括：</p>
 <ul>
 <li>遵守容器中设置的内存限制</li>
 <li>在容器中设置可用的CPU</li>
