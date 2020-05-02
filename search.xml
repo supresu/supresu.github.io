@@ -1,6 +1,198 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>JAVA 11</title>
+    <url>/2020/04/25/java11/</url>
+    <content><![CDATA[<p>Oracle 在 2014 年 3 月发布了 Java 8 正式版，5 年之后的 2018年 9 月，Java 11 正式版也和广大的 java 开发者见面，作为 Java8 后的首个长期支持版本，Java 11 也逐渐得到了开发者的青睐。根据 <a href="https://blog.newrelic.com/technology/state-of-java/" target="_blank" rel="noopener">New Relic</a> 发布的数据显示，截至 2020 年 3 月，Java 8 的使用量高达 <code>84.48%</code>，Java 11 则是 <code>11.11%</code>。</p>
+<p>尽管普及程度还远远达不到 Java 8 的标准，但 Java 11 带来的各方面提升还是非常具有吸引力的，本文也将介绍在 Java 8 基础上 Java 11 都带了哪些新特性和性能提升。</p>
+<a id="more"></a>
+
+<hr>
+<h2 id="为什么关注-Java-11"><a href="#为什么关注-Java-11" class="headerlink" title="为什么关注 Java 11"></a>为什么关注 Java 11</h2><p>从今天 Java 8 的普及程度我们大概可以预测 Java 11 的前景，作为 Java8 后的首个长期支持版本，技术支持时间直到 2023 年 9 月份，补丁和扩展支持直到 2026 年 9 月份（详情见：<a href="https://www.oracle.com/java/technologies/java-se-support-roadmap.html" target="_blank" rel="noopener">Oracle Java SE Support Roadmap</a>）。</p>
+<p><img src="/images/jdk11/roadmap.png" alt="java-roadmap"></p>
+<hr>
+<h2 id="新特性"><a href="#新特性" class="headerlink" title="新特性"></a>新特性</h2><p>11 和 8 之间还经历了 2 个版本，虽然不是长期支持的版本，但还是要简单介绍一下。在介绍新特性之前我们先了解两个概念：</p>
+<ul>
+<li><strong>JSR</strong>：Java Specification Requests，Java 规范请求，由 JCP（Java Community Process，由社会各界 Java 组成的社区）成员向委员会提交的 Java 发展议案，经过一系列流程后，如果通过最终会体现在未来的 Java 中</li>
+<li><strong>JEP</strong>：JDK Enhancement Proposal，JDK 增强提案，目的在于鼓励 OpenJDK 提交者贡献点子和扩展以改进 OpenJDK 生态圈，详情可以在 <a href="https://openjdk.java.net/jeps/1" target="_blank" rel="noopener">官网</a> 查看</li>
+</ul>
+<h3 id="Java-9"><a href="#Java-9" class="headerlink" title="Java 9"></a>Java 9</h3><p>经过 4 次跳票，历经曲折的 Java 9 终于终于在 2017 年 9 月 21 日发布（距离上个版本足足3年半时间），Java 9 提供了超过 150 项新功能特性，包括备受期待的<code>模块化系统</code>、<code>可交互的 REPL 工具：jshell</code>，<code>JDK 编译工具</code>，<code>Java 公共 API 和私有代码</code>，以及<code>安全增强</code>、<code>扩展提升</code>、<code>性能管理改善</code>等，它的新特性来自于 100 余项 JEP 和 40 余项 JSR。主要的特性（<a href="https://www.jcp.org/en/jsr/detail?id=379" target="_blank" rel="noopener">JSR 379</a>）如下：</p>
+<ul>
+<li>Platform<ul>
+<li><a href="http://openjdk.java.net/jeps/220" target="_blank" rel="noopener">Modular Run-Time Images</a></li>
+<li><a href="http://openjdk.java.net/jeps/261" target="_blank" rel="noopener">Module System</a><a href="https://jcp.org/en/jsr/detail?id=376" target="_blank" rel="noopener">(JSR 376)</a></li>
+<li><a href="http://openjdk.java.net/jeps/238" target="_blank" rel="noopener">Multi-Release JAR Files</a></li>
+<li><a href="http://openjdk.java.net/jeps/223" target="_blank" rel="noopener">New Version-String Scheme</a></li>
+<li><a href="http://openjdk.java.net/jeps/200" target="_blank" rel="noopener">The Modular JDK</a></li>
+</ul>
+</li>
+<li>Language<ul>
+<li><a href="http://openjdk.java.net/jeps/211" target="_blank" rel="noopener">Elide Deprecation Warnings on Import Statements</a></li>
+<li><a href="http://openjdk.java.net/jeps/286" target="_blank" rel="noopener">Local-Variable Type Inference</a></li>
+<li><a href="http://openjdk.java.net/jeps/213" target="_blank" rel="noopener">Milling Project Coin</a></li>
+</ul>
+</li>
+<li>Core Libraries<ul>
+<li><a href="http://openjdk.java.net/jeps/269" target="_blank" rel="noopener">Convenience Factory Methods for Collections</a></li>
+<li><a href="http://openjdk.java.net/jeps/277" target="_blank" rel="noopener">Enhanced Deprecation</a></li>
+<li><a href="http://openjdk.java.net/jeps/274" target="_blank" rel="noopener">Enhanced Method Handles</a></li>
+<li><a href="http://openjdk.java.net/jeps/264" target="_blank" rel="noopener">Platform Logging API and Service</a></li>
+<li><a href="http://openjdk.java.net/jeps/102" target="_blank" rel="noopener">Process API Updates</a></li>
+<li><a href="http://openjdk.java.net/jeps/285" target="_blank" rel="noopener">Spin-Wait Hints</a></li>
+<li><a href="http://openjdk.java.net/jeps/193" target="_blank" rel="noopener">Variable Handles</a></li>
+</ul>
+</li>
+<li>Networking<ul>
+<li><a href="http://openjdk.java.net/jeps/110" target="_blank" rel="noopener">HTTP/2 Client</a></li>
+</ul>
+</li>
+<li>Security<ul>
+<li><a href="http://openjdk.java.net/jeps/229" target="_blank" rel="noopener">Create PKCS12 Keystores by Default</a></li>
+<li><a href="http://openjdk.java.net/jeps/273" target="_blank" rel="noopener">DRBG-Based SecureRandom Implementations</a></li>
+<li><a href="http://openjdk.java.net/jeps/219" target="_blank" rel="noopener">Datagram Transport Layer Security (DTLS)</a></li>
+<li><a href="http://openjdk.java.net/jeps/249" target="_blank" rel="noopener">OCSP Stapling for TLS</a></li>
+<li><a href="http://openjdk.java.net/jeps/244" target="_blank" rel="noopener">TLS Application-Layer Protocol Negotiation</a></li>
+</ul>
+</li>
+<li>Client Libraries<ul>
+<li><a href="http://openjdk.java.net/jeps/289" target="_blank" rel="noopener">Deprecate the Applet API</a></li>
+<li><a href="http://openjdk.java.net/jeps/251" target="_blank" rel="noopener">Multi-Resolution Images</a></li>
+<li><a href="http://openjdk.java.net/jeps/272" target="_blank" rel="noopener">Platform-Specific Desktop Features</a></li>
+<li><a href="http://openjdk.java.net/jeps/262" target="_blank" rel="noopener">TIFF Image I/O</a></li>
+</ul>
+</li>
+<li>XML<ul>
+<li><a href="http://openjdk.java.net/jeps/268" target="_blank" rel="noopener">XML Catalogs</a></li>
+</ul>
+</li>
+</ul>
+<h3 id="Java-10"><a href="#Java-10" class="headerlink" title="Java 10"></a>Java 10</h3><p>在 Java9 之后，为了更快地迭代以及跟进社区反馈，Java 的版本发布周期变更为每六个月一次，并且承诺不会跳票。新的发布周期也会严格遵循时间点，将在每年的 3 月份和 9 月份发布。不负众望，Java 10 在 2018 年 3 月 14 如期和大家见面了。虽然只有短短的 6 个月，Java 10 还是带来了 109 项新的特性（<a href="https://www.jcp.org/en/jsr/detail?id=383" target="_blank" rel="noopener">JSR 383</a>），其中备受关注的是 <a href="https://openjdk.java.net/projects/jdk/10/" target="_blank" rel="noopener">12 个 JEP 特性增强提议</a>：</p>
+<ul>
+<li><a href="https://openjdk.java.net/jeps/286" target="_blank" rel="noopener">Local-Variable Type Inference</a></li>
+<li><a href="https://openjdk.java.net/jeps/296" target="_blank" rel="noopener">Consolidate the JDK Forest into a Single Repository</a></li>
+<li><a href="https://openjdk.java.net/jeps/304" target="_blank" rel="noopener">Garbage-Collector Interface</a></li>
+<li><a href="https://openjdk.java.net/jeps/307" target="_blank" rel="noopener">Parallel Full GC for G1</a></li>
+<li><a href="https://openjdk.java.net/jeps/310" target="_blank" rel="noopener">Application Class-Data Sharing</a></li>
+<li><a href="https://openjdk.java.net/jeps/312" target="_blank" rel="noopener">Thread-Local Handshakes</a></li>
+<li><a href="https://openjdk.java.net/jeps/313" target="_blank" rel="noopener">Remove the Native-Header Generation Tool (javah)</a></li>
+<li><a href="https://openjdk.java.net/jeps/314" target="_blank" rel="noopener">Additional Unicode Language-Tag Extensions</a></li>
+<li><a href="https://openjdk.java.net/jeps/316" target="_blank" rel="noopener">Heap Allocation on Alternative Memory Devices</a></li>
+<li><a href="https://openjdk.java.net/jeps/317" target="_blank" rel="noopener">Experimental Java-Based JIT Compiler</a></li>
+<li><a href="https://openjdk.java.net/jeps/319" target="_blank" rel="noopener">Root Certificates</a></li>
+<li><a href="https://openjdk.java.net/jeps/322" target="_blank" rel="noopener">Time-Based Release Versioning</a></li>
+</ul>
+<h3 id="Java-11"><a href="#Java-11" class="headerlink" title="Java 11"></a>Java 11</h3><p>2018 年 9 月，收个长期支持版本发布，也就是今天的主角 Java 11，该版本带来了 90 项新的特性（<a href="https://www.jcp.org/en/jsr/detail?id=384" target="_blank" rel="noopener">JSR 384</a>），其中备受关注的还是 <a href="https://openjdk.java.net/projects/jdk/11/" target="_blank" rel="noopener">17 个 JEP 特性增强提议</a>：</p>
+<ul>
+<li><a href="https://openjdk.java.net/jeps/181" target="_blank" rel="noopener">Nest-Based Access Control</a></li>
+<li><a href="https://openjdk.java.net/jeps/309" target="_blank" rel="noopener">Dynamic Class-File Constants</a></li>
+<li><a href="https://openjdk.java.net/jeps/315" target="_blank" rel="noopener">Improve Aarch64 Intrinsics</a></li>
+<li><a href="https://openjdk.java.net/jeps/318" target="_blank" rel="noopener">Epsilon: A No-Op Garbage Collector</a></li>
+<li><a href="https://openjdk.java.net/jeps/320" target="_blank" rel="noopener">Remove the Java EE and CORBA Modules</a></li>
+<li><a href="https://openjdk.java.net/jeps/321" target="_blank" rel="noopener">HTTP Client (Standard)</a></li>
+<li><a href="https://openjdk.java.net/jeps/323" target="_blank" rel="noopener">Local-Variable Syntax for Lambda Parameters</a></li>
+<li><a href="https://openjdk.java.net/jeps/324" target="_blank" rel="noopener">Key Agreement with Curve25519 and Curve448</a></li>
+<li><a href="https://openjdk.java.net/jeps/327" target="_blank" rel="noopener">Unicode 10</a></li>
+<li><a href="https://openjdk.java.net/jeps/328" target="_blank" rel="noopener">Flight Recorder</a></li>
+<li><a href="https://openjdk.java.net/jeps/329" target="_blank" rel="noopener">ChaCha20 and Poly1305 Cryptographic Algorithms</a></li>
+<li><a href="https://openjdk.java.net/jeps/330" target="_blank" rel="noopener">Launch Single-File Source-Code Programs</a></li>
+<li><a href="https://openjdk.java.net/jeps/331" target="_blank" rel="noopener">Low-Overhead Heap Profiling</a></li>
+<li><a href="https://openjdk.java.net/jeps/332" target="_blank" rel="noopener">Transport Layer Security (TLS) 1.3</a></li>
+<li><a href="https://openjdk.java.net/jeps/333" target="_blank" rel="noopener">ZGC: A Scalable Low-Latency Garbage Collector(Experimental)</a></li>
+<li><a href="https://openjdk.java.net/jeps/335" target="_blank" rel="noopener">Deprecate the Nashorn JavaScript Engine</a></li>
+<li><a href="https://openjdk.java.net/jeps/336" target="_blank" rel="noopener">Deprecate the Pack200 Tools and API</a></li>
+</ul>
+<hr>
+<h2 id="Java-8-升级到-Java-11-带来的改变"><a href="#Java-8-升级到-Java-11-带来的改变" class="headerlink" title="Java 8 升级到 Java 11 带来的改变"></a>Java 8 升级到 Java 11 带来的改变</h2><p>基于开源规划调度引擎 OptaPlanner 官网发布的 <a href="https://www.optaplanner.org/blog/2019/01/17/HowMuchFasterIsJava11.html" target="_blank" rel="noopener">Java 11 GC 性能基准测试报告</a> 显示，平均而言，仅通过切换到 Java 11 就有 16％ 的性能提升，这种提升可能是因为 Java 10 中引入了 <a href="https://openjdk.java.net/jeps/307" target="_blank" rel="noopener">JEP 307: Parallel Full GC for G1</a>。</p>
+<p>那么主要有哪些改进的特性呢：</p>
+<h3 id="本地变量类型推断"><a href="#本地变量类型推断" class="headerlink" title="本地变量类型推断"></a>本地变量类型推断</h3><p>变量类型推断就是左边的类型直接使用 var 定义，而不用写具体的类型，编译器能根据右边的表达式自动推断类型：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> javastack = <span class="string">"javastack"</span>;</span><br></pre></td></tr></table></figure>
+<p>等价于</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">String javastack = <span class="string">"javastack"</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="紧凑型的字符串"><a href="#紧凑型的字符串" class="headerlink" title="紧凑型的字符串"></a>紧凑型的字符串</h3><p>从 Java 9 开始 String 数据承载由 char[] 改为 byte[] 紧凑的字符串，在很多时候只包含 Latin-1 里的字符，这些字符可节省一半内存。</p>
+<h3 id="增强-api"><a href="#增强-api" class="headerlink" title="增强 api"></a>增强 api</h3><ul>
+<li><p>字符串增强 @since 11</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 判断字符串是否为空白</span></span><br><span class="line"><span class="string">" "</span>.isBlank(); <span class="comment">// true</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 去除首尾空白</span></span><br><span class="line"><span class="string">" Javastack "</span>.strip(); <span class="comment">// "Javastack"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 去除尾部空格</span></span><br><span class="line"><span class="string">" Javastack "</span>.stripTrailing(); <span class="comment">// " Javastack"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 去除首部空格</span></span><br><span class="line"><span class="string">" Javastack "</span>.stripLeading(); <span class="comment">// "Javastack "</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 复制字符串</span></span><br><span class="line"><span class="string">"Java"</span>.repeat(<span class="number">3</span>);<span class="comment">// "JavaJavaJava"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 行数统计</span></span><br><span class="line"><span class="string">"A\nB\nC"</span>.lines().count(); <span class="comment">// 3</span></span><br></pre></td></tr></table></figure></li>
+<li><p>集合增强 @since 9<br>从Java 9 开始，jdk 里面就为集合（List、Set、Map）增加了 of（since 9）和 copyOf（since 10）方法。它们用来创建不可变集合。</p>
+<p>示例 1：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> list = List.of(<span class="string">"Java"</span>, <span class="string">"Python"</span>, <span class="string">"C"</span>);</span><br><span class="line"><span class="keyword">var</span> copy = List.copyOf(list);</span><br><span class="line">System.out.println(list == copy);  <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+<p>示例 2：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> list = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line"><span class="keyword">var</span> copy = List.copyOf(list);</span><br><span class="line">System.out.println(list == copy);  <span class="comment">// false</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>使用 of 和 copyOf 创建的集合为不可变集合，不能进行添加、删除、替换、排序等操作，不然会报 java.lang.UnsupportedOperationException 异常；使用 Set.of() 不能出现重复元素、Map.of()不能出现重复 key，否则会报 java.lang.IllegalArgumentException。</p>
+</blockquote>
+</li>
+<li><p>Stream 增强 @since 9<br>Stream 是Java 8 中的特性，在 Java 9 中为其新增了 4 个方法</p>
+<ul>
+<li>ofNullable(T t)<br>此方法可以接收null来创建一个空流<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 以前</span></span><br><span class="line">Stream.of(<span class="keyword">null</span>); <span class="comment">//报错</span></span><br><span class="line"><span class="comment">// 现在</span></span><br><span class="line">Stream.ofNullable(<span class="keyword">null</span>);</span><br></pre></td></tr></table></figure></li>
+<li>takeWhile(Predicate&lt;? super T&gt; predicate)<br>此方法根据 Predicate 接口来判断如果为 true 就取出 来生成一个新的流，只要碰到 false 就终止，不管后边的元素是否符合条件。<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Stream&lt;Integer&gt; integerStream = Stream.of(<span class="number">6</span>, <span class="number">10</span>, <span class="number">11</span>, <span class="number">15</span>, <span class="number">20</span>);</span><br><span class="line">Stream&lt;Integer&gt; takeWhile = integerStream.takeWhile(t -&gt; t % <span class="number">2</span> == <span class="number">0</span>);</span><br><span class="line">takeWhile.forEach(System.out::println); <span class="comment">// 6,10</span></span><br></pre></td></tr></table></figure></li>
+<li>dropWhile(Predicate&lt;? super T&gt; predicate)<br>此方法根据 Predicate 接口来判断如果为 true 就丢弃来生成一个新的流，只要碰到 false 就终止，不管后边的元素是否符合条件。<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Stream&lt;Integer&gt; integerStream = Stream.of(<span class="number">6</span>, <span class="number">10</span>, <span class="number">11</span>, <span class="number">15</span>, <span class="number">20</span>);</span><br><span class="line">Stream&lt;Integer&gt; takeWhile = integerStream.dropWhile(t -&gt; t % <span class="number">2</span> == <span class="number">0</span>);</span><br><span class="line">takeWhile.forEach(System.out::println); <span class="comment">//11,15,20</span></span><br></pre></td></tr></table></figure></li>
+<li>iterate 重载<br>以前使用 iterate 方法生成无限流需要配合 limit 进行截断<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Stream&lt;Integer&gt; limit = Stream.iterate(<span class="number">1</span>, i -&gt; i + <span class="number">1</span>).limit(<span class="number">5</span>);</span><br><span class="line">limit.forEach(System.out::println); <span class="comment">//1,2,3,4,5</span></span><br></pre></td></tr></table></figure>
+现在重载后这个方法增加了个判断参数<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Stream&lt;Integer&gt; iterate = Stream.iterate(<span class="number">1</span>, i -&gt; i &lt;= <span class="number">5</span>, i -&gt; i + <span class="number">1</span>);</span><br><span class="line">iterate.forEach(System.out::println); <span class="comment">//1,2,3,4,5</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>Optional 增强 @since 9</p>
+<ul>
+<li>stream()<br>如果为空返回一个空流，如果不为空将Optional的值转成一个流。<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//返回Optional值的流</span></span><br><span class="line">Stream&lt;String&gt; stream = Optional.of(<span class="string">"Java 11"</span>).stream();</span><br><span class="line">stream.forEach(System.out::println); <span class="comment">// Java 11</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//返回空流</span></span><br><span class="line">Stream&lt;Object&gt; stream = Optional.ofNullable(<span class="keyword">null</span>).stream();</span><br><span class="line">stream.forEach(System.out::println); <span class="comment">//</span></span><br></pre></td></tr></table></figure></li>
+<li>ifPresentOrElse(Consumer&lt;? super T&gt; action, Runnable emptyAction)<br>如果一个 Optional 包含值，则对其包含的值调用函数 action，即 action.accept(value)，这与 ifPresent 一致；与 ifPresent 方法的区别在于，ifPresentOrElse 还有第二个参数 emptyAction —— 如果 Optional 不包含值，那么 ifPresentOrElse 便会调用 emptyAction，即 emptyAction.run()。<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Optional&lt;Integer&gt; optional = Optional.of(<span class="number">1</span>);</span><br><span class="line">optional.ifPresentOrElse( x -&gt; System.out.println(<span class="string">"Value: "</span> + x),() -&gt;</span><br><span class="line">System.out.println(<span class="string">"Not Present."</span>)); <span class="comment">//Value: 1</span></span><br><span class="line"></span><br><span class="line">optional = Optional.empty();</span><br><span class="line">optional.ifPresentOrElse( x -&gt; System.out.println(<span class="string">"Value: "</span> + x),() -&gt;</span><br><span class="line">System.out.println(<span class="string">"Not Present."</span>)); <span class="comment">//Not Present.</span></span><br></pre></td></tr></table></figure></li>
+<li>or(Supplier&lt;? extends Optional&lt;? extends T&gt;&gt; supplier)<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Optional&lt;String&gt; optional1 = Optional.of(<span class="string">"Java"</span>);</span><br><span class="line">Supplier&lt;Optional&lt;String&gt;&gt; supplierString = () -&gt; Optional.of(<span class="string">"Not Present"</span>);</span><br><span class="line">optional1 = optional1.or( supplierString);</span><br><span class="line">optional1.ifPresent( x -&gt; System.out.println(<span class="string">"Value: "</span> + x)); <span class="comment">//Value: Java</span></span><br><span class="line">optional1 = Optional.empty();</span><br><span class="line">optional1 = optional1.or( supplierString);</span><br><span class="line">optional1.ifPresent( x -&gt; System.out.println(<span class="string">"Value: "</span> + x)); <span class="comment">//Value: Not Present</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>InputStream 增强 @since 9</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">String lxs = <span class="string">"java"</span>;</span><br><span class="line"><span class="keyword">try</span> (<span class="keyword">var</span> inputStream = <span class="keyword">new</span> ByteArrayInputStream(lxs.getBytes());</span><br><span class="line">  <span class="keyword">var</span> outputStream = <span class="keyword">new</span> ByteArrayOutputStream()) &#123;</span><br><span class="line">  inputStream.transferTo(outputStream);</span><br><span class="line">  System.out.println(outputStream); <span class="comment">// java</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>HTTP Client API @since 11<br>支持同步和异步两种方式，下面是两种方式的示例：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"> <span class="keyword">var</span> request = HttpRequest.newBuilder()</span><br><span class="line">.uri(URI.create(<span class="string">"https://www.58.com/"</span>))</span><br><span class="line">.build();</span><br><span class="line"> </span><br><span class="line"> <span class="keyword">var</span> client = HttpClient.newHttpClient();</span><br><span class="line"></span><br><span class="line"> <span class="comment">// 同步</span></span><br><span class="line"> HttpResponse&lt;String&gt; response = client.send(request, HttpResponse.BodyHandlers.ofString());</span><br><span class="line"> System.out.println(response.body());</span><br><span class="line"> </span><br><span class="line"> <span class="comment">// 异步</span></span><br><span class="line"> CompletableFuture&lt;HttpResponse&lt;String&gt;&gt; sendAsync = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());</span><br><span class="line"> <span class="comment">//这里会阻塞</span></span><br><span class="line"> HttpResponse&lt;String&gt; response1 = sendAsync.get();</span><br><span class="line"> System.out.println(response1.body());</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>完全支持Linux容器（包括docker） @since 10<br>许多运行在 Java 虚拟机中的应用程序（包括 Apache Spark 和 Kafka 等数据服务以及传统的企业应用程序）都可以在 Docker 容器中运行。但是在 Docker 容器中运行 Java 应用程序一直存在一个问题，那就是在容器中运行 JVM 程序在设置内存大小和 CPU 使用率后，会导致应用程序的性能下降。这是因为 Java 应用程序没有意识到它正在容器中运行。随着 Java 10 的发布，这个问题总算得以解决，JVM 现在可以识别由容器控制组（cgroups）设置的约束。可以在容器中使用内存和 CPU 约束来直接管理 Java 应用程序，其中包括：</p>
+<ul>
+<li>遵守容器中设置的内存限制</li>
+<li>在容器中设置可用的CPU</li>
+<li>在容器中设置CPU约束</li>
+</ul>
+</li>
+<li><p>移除内容</p>
+<ul>
+<li>com.sun.awt.AWTUtilities。</li>
+<li>sun.misc.Unsafe.defineClass 使用java.lang.invoke.MethodHandles.Lookup.defineClass来替代。</li>
+<li>Thread.destroy() 以及 Thread.stop(Throwable) 方法。</li>
+<li>sun.nio.ch.disableSystemWideOverlappingFileLockCheck 属性。</li>
+<li>sun.locale.formatasdefault 属性。</li>
+<li>jdk snmp 模块。</li>
+<li>javafx，openjdk 是从 java10 版本就移除了，oracle java10 还尚未移除 javafx ，而 java11 版本将 javafx 也移除了。</li>
+<li>Java Mission Control，从 JDK 中移除之后，需要自己单独下载。</li>
+<li>Root Certificates ：Baltimore Cybertrust Code Signing CA，SECOM ，AOL and Swisscom。</li>
+<li>在 java11 中将 java9 标记废弃的 Java EE 及 CORBA模 块移除掉。</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="Java-11-收费吗？"><a href="#Java-11-收费吗？" class="headerlink" title="Java 11 收费吗？"></a>Java 11 收费吗？</h2><p>最后说一个大家比较关心的问题，Java 11 收费吗？</p>
+<p>我们都知道，Oracle 在 Java 8 的时候开启了 JDK 的收费模式，具体来说 Oracle 将继续提供 JDK 8 免费的公共更新和自动更新，支持个人用户到 2020 年 12 月底，支持商业用户到 2019 年 1 月；换句话说如果想 Oracle 后续继续为你提供 JDK 8 的支持，那么则需要付费。</p>
+<p>Oracle JDK 从 11 之后使用了 <code>OTN 协议</code>（即 Oracle Technology Network License Agreement），简单的说就是可以私用，商用需要付费。不过 Oracle 在发布 JDK 时会同时发布两个不同版本，分别为 <code>Oracle JDK</code> 和 <code>OpenJDK</code>, 这两个版本除了所附带的许可文件不一样（OpenJDK 支持 GPL 协议），刚发布的版本几乎完全相同。至于更新计划可以看下图：</p>
+<p><img src="/images/jdk11/JavaReleaseSystematik.jpg" alt="JavaReleaseSystematik"></p>
+<p>针对 OpenJDK 11 来说，应该有 JDK 11.0.0，然后是两个安全补丁 11.0.1 和 11.0.2，如果需要继续使用 Oracle 的 OpenJDK 构建和安全补丁，那么须在发布后的一个月内迁移到 JDK 12。</p>
+<p><img src="/images/jdk11/java-roadmap.png" alt="java-roadmap"></p>
+<p><em>PS: 不得不吐槽一下 Oracle 确实很坑，希望 Java 不会在他手上没落；以前一直以为微软很封闭，现在真的是刮目相看</em></p>
+<p>除了 OpenJDK 外，还有很多开源 JDK 产品：</p>
+<ul>
+<li><a href="http://adoptopenjdk.net/" target="_blank" rel="noopener">AdoptOpenJDK</a></li>
+<li><a href="https://developers.redhat.com/products/openjdk/download" target="_blank" rel="noopener">Red Hat OpenJDK</a></li>
+<li><a href="https://zulu.org/" target="_blank" rel="noopener">Azul Zulu</a></li>
+<li><a href="https://sap.github.io/SapMachine/" target="_blank" rel="noopener">SAP</a></li>
+</ul>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><blockquote>
+<p><a href="https://www.toutiao.com/i6796064802574696963/?tt_from=weixin&utm_campaign=client_share&wxshare_count=1&timestamp=1587818043&app=news_article&utm_source=weixin&utm_medium=toutiao_android&req_id=20200425203402010130037138445BA3E5&group_id=6796064802574696963" target="_blank" rel="noopener">「是时候升级Java11了」 JDK11优势和JDK选择</a><br><a href="https://www.jianshu.com/p/548c8ece1c95" target="_blank" rel="noopener">Java8及新版本许可证及收费？</a><br><a href="https://yq.aliyun.com/articles/645952" target="_blank" rel="noopener">JDK 11 是发布了，但收费吗？</a><br><a href="https://www.promatis.de/en/2018/09/30/what-is-behind-the-new-license-model-of-oracle-java/" target="_blank" rel="noopener">What is behind the new license model of Oracle Java?</a><br><a href="http://www.360doc.com/content/18/1123/15/48481448_796736124.shtml" target="_blank" rel="noopener">java9新特性（简述十大新特性）</a><br><a href="https://www.oschina.net/translate/109-new-features-in-jdk-10" target="_blank" rel="noopener">JDK 10 的 109 项新特性（译）</a><br><a href="https://cn.azul.com/90-new-features-and-apis-in-jdk-11/" target="_blank" rel="noopener">90 New Features (and APIs) in JDK 11</a><br><a href="https://www.jianshu.com/p/6e08454cc8ac" target="_blank" rel="noopener">Java11正式发布，要不要升级请看这里！</a><br><a href="https://www.oschina.net/news/103704/how-much-faster-is-java-11" target="_blank" rel="noopener">Java 11 究竟比 8 快了多少？看看这个基准测试</a></p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>JAVA</category>
+      </categories>
+      <tags>
+        <tag>JAVA</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Nested-Loop Join，Hash Join，Sort Merge Join</title>
     <url>/2020/03/31/Nested_Loop-Hash_Join-Merge_Join/</url>
     <content><![CDATA[<p>我们都知道 MySQL 8 中推出了一种新的算法 Hash Join，大家对这个新特性也都非常的兴奋，那究竟什么是 Hash Join 呢，它比现在 MySQL 使用的 Nested-Loop Join 有什么优势呢，下面我们将介绍一下数据库中常用的三个 join 算法（Nested-Loop Join、Hash Join、Sort Merge Join）以及它们之前的区别和联系。</p>
