@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+    
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    工作中常用的加密算法介绍 |  炸炸是个呼噜怪
+  </title>
+  <meta name="generator" content="hexo-theme-yilia-plus">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/css/main.css">
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+  
+
+  
+
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    <main class="content">
+      <section class="outer">
+  <article id="post-encrypt-algo" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  工作中常用的加密算法介绍
+</h1>
+  
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2020/05/04/encrypt-algo/" class="article-date">
+  <time datetime="2020-05-04T11:07:23.000Z" itemprop="datePublished">2020-05-04</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%AE%89%E5%85%A8/">安全</a>
+  </div>
+
+      
+      
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">5.4k字</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">20分钟</span>
+        </span>
+    </span>
+</div>
+
+      
+    </div>
+    
+
+    
+    
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+
+      
+      <p>作为一个开发者，我们总会接触到诸如 <code>接口鉴权</code>、<code>https</code>、<code>数字签名</code>、<code>数字证书</code> 甚至近两年特别火的话题 - <code>区块链</code> 等，这里面的核心技术便是密码学相关的知识，本文将介绍我们在工作中经常用到的四类加密算法：<code>密码散列函数</code>（Cryptographic Hash Function）、<code>消息认证码</code>（Message Authentication Codes, MACs）、<code>对称加密算法</code>（Symmetric Key Algorithms）、<code>非对称加密</code>（Asymmetric Key Algorithms）、<code>认证加密</code>（Authenticated Encryption, AE）。</p>
+<a id="more"></a>
+
+<hr>
+<h2 id="一些基本概念介绍"><a href="#一些基本概念介绍" class="headerlink" title="一些基本概念介绍"></a>一些基本概念介绍</h2><h3 id="☞-机密性（confidentiality）-防泄露"><a href="#☞-机密性（confidentiality）-防泄露" class="headerlink" title="☞ 机密性（confidentiality）- 防泄露"></a>☞ 机密性（confidentiality）- 防泄露</h3><p>一提到加密，大家的直观感受就是保证明文数据没办法被直接解读，这个就是机密性，为了实现机密性，密码算法都需需要密钥。</p>
+<h3 id="☞-完整性（integrity）-防篡改"><a href="#☞-完整性（integrity）-防篡改" class="headerlink" title="☞ 完整性（integrity）- 防篡改"></a>☞ 完整性（integrity）- 防篡改</h3><p>为了防止有人对数据进行了修改，一般使用的技术包括：<code>密码散列函数</code>、<code>消息认证码</code>、<code>数字签名</code>等。</p>
+<h3 id="☞-真实性（authenticity）-防伪装"><a href="#☞-真实性（authenticity）-防伪装" class="headerlink" title="☞ 真实性（authenticity）- 防伪装"></a>☞ 真实性（authenticity）- 防伪装</h3><p>为了防止伪装以保证数据发送方的身份，一般使用的技术包括：<code>消息认证码</code>、<code>数字签名</code>等。</p>
+<h3 id="☞-不可否认性（Non-repudiation）-防否认"><a href="#☞-不可否认性（Non-repudiation）-防否认" class="headerlink" title="☞ 不可否认性（Non-repudiation）- 防否认"></a>☞ 不可否认性（Non-repudiation）- 防否认</h3><p>确认数据只能来自指定的发送方，其他人无法伪造，一般使用的技术包括：<code>数字签名</code>等。</p>
+<h3 id="☞-加密方式分类"><a href="#☞-加密方式分类" class="headerlink" title="☞ 加密方式分类"></a>☞ 加密方式分类</h3><table width="307.65" border="0" cellpadding="0" cellspacing="0" style='width:307.65pt;border-collapse:collapse;table-layout:fixed;'>
+   <col width="112.50" style='mso-width-source:userset;mso-width-alt:4800;'/>
+   <col width="109.15" style='mso-width-source:userset;mso-width-alt:4657;'/>
+   <tr height="29" style='height:29.00pt;mso-height-source:userset;mso-height-alt:580;'>
+    <td class="xl65" width="112.50" style='width:112.50pt;border:.5pt solid windowtext;font-weight: bold;' x:str>按密钥特征分类</td>
+    <td class="xl66" width="109.15" style='width:109.15pt;border:.5pt solid windowtext;font-weight: bold;' x:str>按照加密方式分类</td>
+   </tr>
+   <tr height="21" style='height:21.00pt;mso-height-source:userset;mso-height-alt:420;'>
+    <td class="xl67" rowspan="2" style='border:.5pt solid windowtext;' x:str>对称加密</td>
+    <td class="xl67" style='border:.5pt solid windowtext;' x:str>流密码</td>
+   </tr>
+   <tr height="18" style='height:18.00pt;mso-height-source:userset;mso-height-alt:360;'>
+    <td class="xl68" rowspan="3" style='border:.5pt solid windowtext;' x:str>分组密码</td>
+   </tr>
+   <tr height="13.60" style='height:13.60pt;'>
+    <td class="xl67" rowspan="2" style='border:.5pt solid windowtext;border-bottom:.5pt solid windowtext' x:str>非对称加密</td>
+   </tr>
+  </table>
+
+<blockquote>
+<p>注：<strong>分组密码</strong>（<a href="https://en.wikipedia.org/wiki/Block_cipher" target="_blank" rel="noopener">Block Cipher Algorithms</a>），只能加密固定长度的分组，若要加密变长数据，则数据必须先被划分为一些单独的密码块；<br><strong>流密码</strong>（<a href="https://en.wikipedia.org/wiki/Stream_cipher" target="_blank" rel="noopener">Stream Cipher Algorithms</a>），是一种对称加密算法（也就是说非对称加密均为分组密码），加密时候，先由种子密钥生成一个密钥流，加密和解密双方使用相同伪随机加密数据流（pseudo-random stream）作为密钥，明文数据每次与密钥数据流顺次对应加密，得到密文数据流。实践中数据通常是一个位（bit）并用异或（xor）操作加密。</p>
+</blockquote>
+<h3 id="☞-分组密码工作模式"><a href="#☞-分组密码工作模式" class="headerlink" title="☞ 分组密码工作模式"></a>☞ 分组密码工作模式</h3><p>分组密码 <code>工作模式</code> 描述了如何重复加密比较长的多个数据块，工作模式为许多国家和国内的标准认证实体所定义，其中最有影响力的来源是美国的NIST。</p>
+<p>常见的保证机密性的工作模式有：</p>
+<ul>
+<li><strong>ECB</strong>：Electronic CodeBook mode（电子密码模式）</li>
+<li><strong>CBC</strong>：Cipher Block Chaining mode（密码分组链接模式）</li>
+<li><strong>CFB</strong>：Cipher FeedBack mode（密文反馈模式）</li>
+<li><strong>OFB</strong>：Output FeedBack mode（输出反馈模式）</li>
+<li><strong>CTR</strong>：CounTeR mode（计数器模式）</li>
+</ul>
+<p>保证完整性和真实性常见的工作模式有：</p>
+<ul>
+<li><strong>HMAC</strong>：2002 年被标准化，<a href="https://csrc.nist.gov/csrc/media/publications/fips/198/archive/2002-03-06/documents/fips-198a.pdf" target="_blank" rel="noopener">FIPS 198</a></li>
+<li><strong>CMAC</strong>：2005 年被标准化，<a href="https://csrc.nist.gov/publications/detail/sp/800-38b/archive/2005-05-01" target="_blank" rel="noopener">SP 800-38B</a></li>
+<li><strong>GMAC</strong>：2007 年被标准化，<a href="https://csrc.nist.gov/publications/detail/sp/800-38d/final" target="_blank" rel="noopener">SP 800-38D</a></li>
+</ul>
+<p>常见的认证加密（AE）模式有：</p>
+<ul>
+<li><strong>CCM</strong>：2004 年被标准化，<a href="https://csrc.nist.gov/publications/detail/sp/800-38c/final" target="_blank" rel="noopener">SP 800-38C</a></li>
+<li><strong>GCM</strong>：2007 年被标准化，<a href="https://csrc.nist.gov/publications/detail/sp/800-38d/final" target="_blank" rel="noopener">SP 800-38D</a></li>
+<li><strong>CWC</strong>：</li>
+<li><strong>EAX</strong>：</li>
+<li><strong>IAPM</strong>：</li>
+<li><strong>OCB</strong>：</li>
+</ul>
+<h3 id="☞-分组密码填充方式分类"><a href="#☞-分组密码填充方式分类" class="headerlink" title="☞ 分组密码填充方式分类"></a>☞ 分组密码填充方式分类</h3><p>分组密码中，需要将明文按指定大小进行分组，由于明文并非指定大小的整数倍，因此在明文的最后一个分组需要通过 <code>填充方式</code> 将其填充至加密算法所要求的分组大小后进行加密，常见的填充方式有：</p>
+<ul>
+<li><strong>NoPadding</strong>：不填充，在此填充下原始数据必须是分组大小的整数倍，非整数倍时无法使用该模式</li>
+<li><strong>PKCS5Padding / PKCS7Padding</strong>：填充至符合块大小的整数倍，填充值为填充数量数</li>
+<li><strong>ISO10126Padding</strong>：填充至符合块大小的整数倍，填充值最后一个字节为填充的数量数，其他字节随机处理</li>
+<li><strong>ISO7816-4Padding</strong>：填充至符合块大小的整数倍，填充值第一个字节为 0x80，其他字节填 0</li>
+<li><strong>ZeroBytePadding</strong>：填充至符合块大小的整数倍，填充值为 0</li>
+<li><strong>X923Padding</strong>：填充至符合块大小的整数倍，填充值最后一个字节为填充的数量数，其他字节填 0</li>
+<li><strong>TBCPadding（Trailing-Bit-Compliment）</strong>：填充至符合块大小的整数倍，原文最后一位为 “1”时填充 0x00，最后一位为 “0” 时填充 “0xFF”</li>
+<li><strong>PKCS1Padding</strong>：该填充模式是 RSA 加密中使用的，详见 <a href="https://tools.ietf.org/html/rfc2313" target="_blank" rel="noopener">RFC2313</a></li>
+</ul>
+<hr>
+<p>这里介绍一下 CTR 计数器模式，在计数器模式下，我们不再对密文进行加密，而是对一个逐次累加的计数器进行加密，用加密后的比特序列与明文分组进行 XOR得到密文。过程如下图：</p>
+<p><img src="/images/encrypt/ctr.png" alt="CTR"></p>
+<hr>
+<h2 id="密码散列函数"><a href="#密码散列函数" class="headerlink" title="密码散列函数"></a>密码散列函数</h2><p>密码散列函数是一种可以将任意的数据映射为某一固定长度的字符串（一般称为消息摘要，Message Digest，或哈希值，Hash Value）的函数，改函数具有如下的特点：</p>
+<ul>
+<li>确定性，同样的数据计算的 hash 值是固定的</li>
+<li>给定原数据可以很快计算出 hash 值</li>
+<li>无法根据 hash 值计算出原数据</li>
+<li>两个不同的原数据只有极低的几率会产生相同的 hash 值</li>
+<li>对原数据进行很小的更改会导致 hash 值发生改变，同时新的 hash 值看起来与旧的 hash 值不相关</li>
+</ul>
+<p>密码散列函数有着丰富的应用场景，如：<code>数字签名</code>（digital signatures）、<code>消息认证码</code>（message authentication codes, MACs）、<code>区块链</code>（Block Chain）等，同时还可以用作普通的哈希函数，为哈希表中的数据建立索引、进行指纹识别、检测重复数据或唯一标识文件等。</p>
+<p>常用算法有：MD5、SHA-1、RIPEMD-160、bcrypt、Whirlpool、SHA-2、SHA-3、BLAKE2、BLAKE3、SM3 等</p>
+<h3 id="☞-MD5"><a href="#☞-MD5" class="headerlink" title="☞ MD5"></a>☞ MD5</h3><p>英文全称是 Message Digest Algorithm MD5，译为 <code>消息摘要算法第五版</code>，在 <a href="https://tools.ietf.org/html/rfc1321" target="_blank" rel="noopener">RFC 1321</a> 中被标准化，MD5 广泛使用在为文件传输提供一定的可靠性，在很多系统中也作为保护密码的一种方式，但这种方式已经不建议使用了，密码的保护还是建议采用更为安全的 bcrypt 算法。</p>
+<h3 id="☞-SHA-1"><a href="#☞-SHA-1" class="headerlink" title="☞ SHA-1"></a>☞ SHA-1</h3><p>英文全称是 Secure Hash Algorithm 1，译为 <code>安全散列算法1</code>，该算法由美国国家安全局设计，并由美国国家标准技术研究所（NIST）发布为联邦数据处理标准（FIPS）[1995年]。SHA-1 可以生成一个被称为消息摘要的 160 位（20字节）散列值，散列值通常的呈现形式为 40 个十六进制数。</p>
+<p>2005 年，密码分析人员发现了对 SHA-1 的有效攻击方法，这表明该算法可能不够安全，不能继续使用，自 2010 年以来，许多组织建议用 SHA-2 或 SHA-3 来替换 SHA-1</p>
+<h3 id="☞-SHA-2"><a href="#☞-SHA-2" class="headerlink" title="☞ SHA-2"></a>☞ SHA-2</h3><p>英文全称是 Secure Hash Algorithm 2，译为 <code>安全散列算法2</code>，同样是由美国国家安全局设计，并由美国国家标准技术研究所（NIST）发布为联邦数据处理标准（FIPS）[2001年]。</p>
+<p>根据摘要长度，SHA-2 衍生出来的算法有：SHA-224、SHA-256、SHA-384、SHA-512、SHA-512/224、SHA-512/256。</p>
+<h3 id="☞-SHA-3"><a href="#☞-SHA-3" class="headerlink" title="☞ SHA-3"></a>☞ SHA-3</h3><p>英文全称是 Secure Hash Algorithm 3，译为 <code>安全散列算法3</code>，之前名为 Keccak 算法，SHA-3 在 2015 年 8 月 5 日由 NIST 通过 <a href="https://www.federalregister.gov/documents/2015/08/05/2015-19181/announcing-approval-of-federal-information-processing-standard-fips-202-sha-3-standard" target="_blank" rel="noopener">FIPS 202</a> 正式发表。SHA-3 当前并未大规模取代 SHA-2，因为 SHA-2 当前没有出现明显的弱点。由于对 MD5、SHA-0 和 SHA-1 出现成功的破解，NIST 感觉需要一个与之前算法不同的，可替换的加密散列算法，也就是现在的 SHA-3。</p>
+<h3 id="☞-SM3"><a href="#☞-SM3" class="headerlink" title="☞ SM3"></a>☞ SM3</h3><p>SM3 是中国政府采用的一种密码散列函数标准，由 <code>国家密码管理</code> 局于 2010 年 12 月 17 日发布。相关标准为 <a href="http://www.oscca.gov.cn/sca/xxgk/2010-12/17/content_1002389.shtml" target="_blank" rel="noopener">“GM/T 0004-2012 《SM3密码杂凑算法》”</a>，其安全性及效率与 SHA-256 相当。</p>
+<hr>
+<h2 id="消息认证码"><a href="#消息认证码" class="headerlink" title="消息认证码"></a>消息认证码</h2><p>在开放的计算和通信世界中，我们会使用不可靠的媒介传输和存储信息，而对信息 <code>完整性</code> 和 <code>真实性</code> 的校验在某些情景下就十分重要。基于密钥作完整性校验的方法常称为消息认证码 (Message Authentication Code, MAC)，通常 MAC 在共享密钥的双方之间，校验相互传递的信息。</p>
+<p>同密码散列函数相比，消息摘要只能保证消息的完整性，如果第三方修改了数据，然后进行散列，并一块发给接收方，接收方并不能察觉到数据被篡改的。<code>MAC 算法则能够保证消息的真实性，数据的发送方和接收方拥有相同的密钥，通过加密策略保证数据不会被第三方篡改</code>。</p>
+<p>MAC 有很多实现方式，比较常用的是 基于 Hash 算法的 MAC，即 <code>HMAC</code>；基于分组密码的实现，比如 OMAC、CBC-MAC、PMAC、<a href="https://en.wikipedia.org/wiki/Galois/Counter_Mode" target="_blank" rel="noopener"><code>GMAC</code></a> 、<a href="https://en.wikipedia.org/wiki/Poly1305" target="_blank" rel="noopener"><code>Poly1305</code></a>。本文只介绍一下 HMAC、GCM 和 Poly1305 算法。</p>
+<blockquote>
+<p>注：在后面会介绍基于流密码 <a href="https://en.wikipedia.org/wiki/Salsa20" target="_blank" rel="noopener">ChaCha20</a> 和 Poly1305 实现的一种认证加密算法 <code>ChaCha20-Poly1305</code>（<a href="https://tools.ietf.org/html/rfc7539" target="_blank" rel="noopener">RFC7539</a>）。</p>
+</blockquote>
+<h3 id="☞-HMAC-RCF2104"><a href="#☞-HMAC-RCF2104" class="headerlink" title="☞ HMAC(RCF2104)"></a>☞ HMAC(<a href="https://tools.ietf.org/html/rfc2104" target="_blank" rel="noopener">RCF2104</a>)</h3><p>基于加密 Hash 算法实现，任何加密 Hash 比如 MD5、SHA1、SHA256、SHA512 等，都可以用来实现 HMAC 算法，其相应的算法称为 HMAC-MD5、HMAC-SHA1、HMAC-SHA256、HMAC-SHA512。HMAC 计算公式为：</p>
+<p>$$ HMAC(K，M) = H(K \oplus opad ∣ H( K \oplus ipad ∣ M)) $$</p>
+<p>其中：</p>
+<ul>
+<li>K 是密钥，长度可为 64 字节，若小于该长度，在密钥后面用 <code>0</code> 补齐</li>
+<li>M 是消息内容</li>
+<li>H 表示 Hash 函数</li>
+<li>opad 和 ipad 分别是由若干个 0x5c 和 0x36 组成的字符串</li>
+<li>$\oplus$ 表示异或运算</li>
+<li>∣ 表示连接操作</li>
+</ul>
+<p>以 <code>HMAC-MD5</code> 为例，其计算流程如下：</p>
+<blockquote>
+<ol>
+<li>在密钥 key 后面添加 0 来创建一个长为 64 字节的字符串 (str)，如果 key 超过 64 字节则使用 key 的 md5 代替 key，再在后面加 0 补齐 64 字节</li>
+<li>将上一步生成的字符串 (str) 与 ipad(0x36) 做异或运算，形成结果字符串 (istr)</li>
+<li>将消息内容 M 附加到第 2 步的结果字符串 (istr) 的末尾；</li>
+<li>做 md5 运算于第 3 步生成的数据流(istr)；</li>
+<li>将第 1 步生成的字符串 (str) 与 opad(0x5c) 做异或运算，形成结果字符串 (ostr)；</li>
+<li>再将第 4 步的结果 (istr) 附加到第五步的结果字符串 (ostr) 的末尾；</li>
+<li>做 md5 运算于第 6 步生成的数据流 (ostr)，输出最终结果 </li>
+</ol>
+</blockquote>
+<p>Java 中计算 HMAC-MD5 如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">HMACMD5</span><span class="params">(String s, String keyString)</span> </span>&#123;</span><br><span class="line">  String res = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    SecretKeySpec key = <span class="keyword">new</span> SecretKeySpec((keyString).getBytes(<span class="string">"UTF-8"</span>), <span class="string">"HmacMD5"</span>);</span><br><span class="line">    Mac mac = Mac.getInstance(<span class="string">"HmacMD5"</span>);</span><br><span class="line">    mac.init(key);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">byte</span>[] bytes = mac.doFinal(s.getBytes(<span class="string">"ASCII"</span>));</span><br><span class="line"></span><br><span class="line">    StringBuffer hash = <span class="keyword">new</span> StringBuffer();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; bytes.length; i++) &#123;</span><br><span class="line">      String hex = Integer.toHexString(<span class="number">0xFF</span> &amp;  bytes[i]);</span><br><span class="line">      <span class="keyword">if</span> (hex.length() == <span class="number">1</span>) &#123;</span><br><span class="line">          hash.append(<span class="string">'0'</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      hash.append(hex);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    res = hash.toString();</span><br><span class="line">  &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">  &#125; <span class="keyword">catch</span>(InvalidKeyException e)&#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">  &#125; <span class="keyword">catch</span> (NoSuchAlgorithmException e) &#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> res;</span><br></pre></td></tr></table></figure>
+
+<h3 id="☞-GMAC"><a href="#☞-GMAC" class="headerlink" title="☞ GMAC"></a>☞ GMAC</h3><p>GMAC 是利用伽罗华域（Galois Field，GF，有限域）乘法运算来计算消息的 MAC 值。假设秘钥长度为 128bits, 当密文大于 128bits 时，需要将密文按 128bits 进行分组。应用流程如下图：</p>
+<p><img src="/images/encrypt/gmac.png" alt="GMAC"></p>
+<p>其中，Mh 表示将输入与秘钥 h 在有限域 $GF(2^{128})$ 上做乘法。</p>
+<p>GMAC 是 </p>
+<h3 id="☞-Poly1305"><a href="#☞-Poly1305" class="headerlink" title="☞ Poly1305"></a>☞ Poly1305</h3><p>Poly1305 是 D. J. Bernstein 设计的一种 MAC 算法，它需要一个 32 字节的一次性密钥和一条消息以产生用于认证消息的 16 字节的标签。最初的设计是基于 AES 加密算法实现，Google 在 2014 年选择了 Poly1305 和 ChaCha20 对称加密算法（也是 Bernstein 提出的，大牛就是大牛）替换了 TLS/SSL 中的 RC4 算法，这种设计最终也成为了 RFC 标准：<a href="https://tools.ietf.org/html/rfc7539" target="_blank" rel="noopener">RFC7539</a>。</p>
+<p>Poly1305-AES 的算法实现可以参考：<a href="http://cr.yp.to/mac.html" target="_blank" rel="noopener">http://cr.yp.to/mac.html</a>，该网站提供了基于 C++、Python、Perl 语言的实现源码。</p>
+<hr>
+<h2 id="对称加密算法"><a href="#对称加密算法" class="headerlink" title="对称加密算法"></a>对称加密算法</h2><p>对称加密算法是应用较早的加密算法，技术成熟，其特点计算加密和解密使用相同的密钥，主要的算法有 DES、3DES、AES、RC4 和 Salsa20/Chacha20 、SM1、SM4、SM7、祖冲之算法(ZUC) 等，其中 DES、3DES、AES、SM1、SM4、SM7 属于分组密码，RC4、Salsa20/Chacha20、祖冲之算法(ZUC) 属于流密码。</p>
+<h3 id="☞-DES-3DES"><a href="#☞-DES-3DES" class="headerlink" title="☞ DES/3DES"></a>☞ DES/3DES</h3><p>DES 全称为 Data Encryption Standard，即数据加密标准，1977 年被美国联邦政府的国家标准局确定为联邦资料处理标准（FIPS）。3DES 是对 DES 的一种改良算法，针对 DES 算法密钥短，迭代次数少的缺点做了改进。但是 3DES 算法速度慢，密钥计算时间长，加密效率不高，实际使用也不多。</p>
+<p>JDK 仅支持 56 位的密钥长度（出口限制），对称加密系列算法的特点是：密钥长度越高安全性越高，因此 JDK 本身自带的 DES 和 3DES 算法仅适合学术和一般场景使用，Bouncy Castle 提供了 64 位密钥长度的支持。</p>
+<h3 id="☞-AES"><a href="#☞-AES" class="headerlink" title="☞ AES"></a>☞ AES</h3><p>AES 全称 Advanced Encryption Standard，即高级加密标准，由美国国家标准与技术研究院（NIST）于 2001 年 11 月 26 日发布为联邦数据处理标准（FIPS），这个标准用来替代原先的DES，已经被多方分析且广为全世界所使用。</p>
+<p>AES 的密钥长度为 128、192 或者 256 位，分组长度 128 位，由于进口管制限制，JDK 默认是不允许 256 位密钥的 AES 加解密的，解决方法就下载官方JCE无限制强度加密策略文件，覆盖即可。</p>
+<p>JDK6的下载地址：<br><a href="http://www.oracle.com/technetwork/java/javase/downloads/jce-6-download-429243.html" target="_blank" rel="noopener">http://www.oracle.com/technetwork/java/javase/downloads/jce-6-download-429243.html</a></p>
+<p>JDK7的下载地址：<br><a href="http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html" target="_blank" rel="noopener">http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html</a></p>
+<p>JDK8的下载地址：<br><a href="http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html" target="_blank" rel="noopener">http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html</a></p>
+<p>但从 Java 1.8.0_151 和 1.8.0_152 开始，为 JVM 启用无限制强度管辖策略有了一种更简单的方法：在 jre/lib/security 文件夹中查找文件 java.security，现在用文本编辑器打开 java.security，并找到定义 java 安全性属性 crypto.policy 的行，它可以有两个值l imited 或 unlimited - 默认值是 limited。将其设置为：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">crypto.policy=unlimited</span><br></pre></td></tr></table></figure>
+
+<h3 id="☞-SM1-SM4-SM7"><a href="#☞-SM1-SM4-SM7" class="headerlink" title="☞ SM1/SM4/SM7"></a>☞ SM1/SM4/SM7</h3><p>均为国家商用密码管理办公室制定的对称分组加密标准，其中：</p>
+<p>SM1 算法是分组密码算法，分组长度为 128 位，密钥长度都为 128 比特，算法安全保密强度及相关软硬件实现性能与 AES 相当，算法不公开，仅以IP 核的形式存在于芯片中。</p>
+<p>SM4 用于无线局域网产品。该算法的分组长度为 128 位，密钥长度为 128 比特。加密算法与密钥扩展算法都采用 32 轮非线性迭代结构。解密算法与加密算法的结构相同，只是轮密钥的使用顺序相反，解密轮密钥是加密轮密钥的逆序。详情可参考：<a href="http://www.sca.gov.cn/sca/c100061/201611/1002423/files/330480f731f64e1ea75138211ea0dc27.pdf" target="_blank" rel="noopener">无线局域网产品使用的 SMS4 密码算法</a>。</p>
+<p>SM7 分组长度为 128 比特，密钥长度为 128 比特。SM7 适用于非接触式 IC 卡，应用包括身份识别类应用(门禁卡、工作证、参赛证)，票务类应用(大型赛事门票、展会门票)，支付与通卡类应用（积分消费卡、校园一卡通、企业一卡通等）。</p>
+<p>SM1、SM7 算法不公开，调用该算法时，需要通过加密芯片的接口进行调用。</p>
+<h3 id="☞-chacha20"><a href="#☞-chacha20" class="headerlink" title="☞ chacha20"></a>☞ chacha20</h3><p>基于 <a href="https://zh.wikipedia.org/wiki/Salsa20" target="_blank" rel="noopener">Salsa20</a> 算法，Salsa20 是一种流加密算法，由丹尼尔·J·伯恩斯坦设计，它创建在基于 add-rotate-xor（ARX）操作的伪随机函数之上（32位模加、异或和循环移位操作），Salsa20 映射一个 256 位密钥、一个 64位 nonce 以及一个 64 位流位置到一个 512 位的输出（也存在一个 128 位密钥的版本），这使 Salsa20 具有了不同寻常的优势，用户可以在恒定时间内寻求输出流中的任何位置。</p>
+<p>在 2008 年，丹尼尔·J·伯恩斯坦发布了一个密切相关的 “ChaCha” 密码家族，其目的是增加每一轮的扩散以实现相同或稍微提升的性能。</p>
+<p>Google 选择了伯恩斯坦设计的，带 Poly1305 消息认证码的 ChaCha20，作为 OpenSSL 中 RC4 的替代品，用以完成互联网的安全通信。不久之后，Google 在 TLS 中采用它，ChaCha20 和 Poly1305 算法也以 <a href="mailto:chacha20-poly1305@openssh.com">chacha20-poly1305@openssh.com</a> 成为 OpenSSH 中的一个新密码包。在没有 AES 指令集的低端 CPU 上，ChaCha20 的性能较 AES 高。</p>
+<h3 id="☞-ZUC-祖冲之算法"><a href="#☞-ZUC-祖冲之算法" class="headerlink" title="☞ ZUC 祖冲之算法"></a>☞ ZUC 祖冲之算法</h3><p>祖冲之序列密码算法是中国自主研究的流密码算法,是运用于移动通信 4G 网络中的国际标准密码算法,该算法包括祖冲之算法(ZUC)、加密算法(128-EEA3)和完整性算法(128-EIA3)三个部分。目前已有对ZUC算法的优化实现，有专门针对 128-EEA3 和 128-EIA3 的硬件实现与优化。</p>
+<hr>
+<h2 id="非对称加密"><a href="#非对称加密" class="headerlink" title="非对称加密"></a>非对称加密</h2><p>全称 Asymmetric cryptography，是密码学的一种算法，它需要两个密钥，一个是 <code>公开密钥</code>，另一个是 <code>私有密钥</code>；公钥用作加密，私钥则用作解密。使用公钥把明文加密后所得的密文，只能用相对应的私钥才能解密并得到原本的明文，最初用来加密的公钥不能用作解密。基于公开密钥加密的特性，它还能提供 <code>数字签名</code> 的功能，使电子文件可以得到如同在纸本文件上亲笔签署的效果。</p>
+<p>常见的公钥加密算法有：RSA、ECC、SM2、双线性映射、SM9等。</p>
+<h3 id="☞-RSA"><a href="#☞-RSA" class="headerlink" title="☞ RSA"></a>☞ RSA</h3><p>RSA 是由罗纳德·李维斯特（Ron Rivest）、阿迪·萨莫尔（Adi Shamir）和伦纳德·阿德曼（Leonard Adleman）在 1977 年一起提出的，RSA就是三个人名字首字母。RSA 的安全性是基于 <code>对大质数进行因式分解过于困难保证的</code>，因而 RSA 的密钥一般非常长，目前来说 1024 位的RSA密钥基本安全，2048 位的密钥极其安全。</p>
+<h3 id="☞-ECC"><a href="#☞-ECC" class="headerlink" title="☞ ECC"></a>☞ ECC</h3><p>全称 Elliptic Curves Cryptography，即椭圆曲线密码，是一种基于椭圆曲线数学的公开密钥加密算法，关于椭圆曲线的理论知识可以阅读《椭圆曲线密码学导论》。ECC 的主要优势是它相比 RSA 加密算法使用较小的密钥长度并提供相当等级的安全性。</p>
+<h3 id="☞-SM2"><a href="#☞-SM2" class="headerlink" title="☞ SM2"></a>☞ SM2</h3><p>SM2 是国家密码管理局于 2010 年 12 月 17 日发布的椭圆曲线公钥密码算法，加密强度为 256 位，是一种椭圆曲线算法，相关标准为 <a href="http://www.oscca.gov.cn/sca/xxgk/2012-11/22/content_1002397.shtml" target="_blank" rel="noopener">“《SM2椭圆曲线公钥密码算法》</a>“。</p>
+<h3 id="☞-双线性映射"><a href="#☞-双线性映射" class="headerlink" title="☞ 双线性映射"></a>☞ 双线性映射</h3><p>全称 Bilinear Pairing，可以实现 <code>基于身份的加密方案</code>（Identity Based Encryption, IBE），IBE 的公钥不是从公钥证书中获得，而是直接用标志自己身份信息的任意长度字符串作为公钥，比如姓名、邮箱地址、IP地址等，与传统的公钥密码体制相比，基于身份的加密体制不需要专门的认证机构，减少了证书分发与管理的复杂性。</p>
+<h3 id="☞-SM9"><a href="#☞-SM9" class="headerlink" title="☞ SM9"></a>☞ SM9</h3><p>SM9 是由国密局发布的一种 IBE 算法，SM9 是基于 256 位的 BN 椭圆曲线的，使用有限域 $ \mathbb{F}_{p^2} $ 和素域 $ \mathbb{F}_p $ ，双线性对使用 R-ate。</p>
+<hr>
+<h2 id="认证加密"><a href="#认证加密" class="headerlink" title="认证加密"></a>认证加密</h2><p>认证加密（Authenticated Encryption, AE）是一种加密形式，它能同时保证数据的 <code>机密性</code>、<code>完整性</code>和 <code>真实性</code>。在实际中推荐使用的是它的一个变体 - <code>关联数据的认证加密</code>（Authenticated Encryption with Associated Data, <code>AEAD</code>），除了拥有 AE 的特性，它还可以提供对未加密的 <code>关联数据</code>（Associated Data）的完整性保证。</p>
+<p>AEAD 产生的原因很简单，单纯的对称加密算法，其解密步骤是无法确认密钥是否正确的，也就是说，加密后的数据可以用任何密钥执行解密运算，得到一组疑似原始数据。</p>
+<p>为了构造更加安全的算法，密码学领域一开始使用了组合密码的形式，即通过 <code>加密</code> 实现 <code>机密性</code>，通过 <code>MAC</code> 进行消息认证以保证消息的 <code>完整性</code> 和 <code>真实性</code>，基于该思路产生了以下几种方案：</p>
+<ul>
+<li>EtM (Encryption then MAC)</li>
+<li>E&amp;M (Encryption and MAC)</li>
+<li>MtE (MAC then Encryption)</li>
+</ul>
+<p>通过这种组合的方式也引入和很多的安全漏洞，2008 年密码学界逐渐提出了「用一个算法在内部同时实现加密和认证」的想法，也就是 AEAD，常用的 AEAD 算法有：<code>AES128/256_GCM</code>、AES128/256_EAX、AES128/256_CTR_HMAC_SHA256、<code>CHACHA20_POLY1305</code> 等</p>
+<h3 id="☞-AES-GCM-vs-CHACHA20-POLY1305"><a href="#☞-AES-GCM-vs-CHACHA20-POLY1305" class="headerlink" title="☞ AES-GCM vs CHACHA20_POLY1305"></a>☞ AES-GCM vs CHACHA20_POLY1305</h3><p>对于 AES 这样的块加密算法来说，在某些硬件上运行的非常快，比如现在的服务器和台式机都有 <code>AES-NI</code> 加速指令。而如果没有加速指令，纯粹通过软件运行，性能是很低的。</p>
+<p>而流密码算法刚好反过来，软件实现性能更高，大部分移动设备（比如手机）由于没有 AES-NI 支持，运行 AES 加密是很缓慢的。大部分观点认为，在移动设备上（没有 AES-NI 指令），ChaCha20-Poly1305 算法的性能是 AES-128-GCM 的三倍；当然在台式机和服务器上，AES-128-GCM 性能比 ChaCha20-Poly1305 更高。</p>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><blockquote>
+<p><a href="https://en.wikipedia.org/wiki/Cryptographic_hash_function" target="_blank" rel="noopener">Cryptographic hash function</a><br><a href="https://zh.wikipedia.org/wiki/%E8%A8%8A%E6%81%AF%E9%91%91%E5%88%A5%E7%A2%BC" target="_blank" rel="noopener">消息认证码</a><br><a href="https://blog.csdn.net/l243224118/article/details/83932434" target="_blank" rel="noopener">消息认证码(MAC)解读</a><br><a href="http://www.flydean.com/hmac/" target="_blank" rel="noopener">HMAC算法及其应用</a><br><a href="https://blog.csdn.net/mutourend/article/details/100578436" target="_blank" rel="noopener">密码学中的AEAD(authenticated encryption with associated data)</a><br><a href="https://www.jianshu.com/p/4ca48cfeb4f4" target="_blank" rel="noopener">Java 11的新加密算法ChaCha20-Poly1305</a><br><a href="https://www.jianshu.com/p/9e46908750de" target="_blank" rel="noopener">HTTP协议-19.对称加密与非对称加密、数字签名与证书</a><br><a href="https://docs.aws.amazon.com/crypto/latest/userguide/cryptography-concepts.html" target="_blank" rel="noopener">Cryptography concepts</a><br><a href="https://www.jianshu.com/p/16e1cbc0b7a9" target="_blank" rel="noopener">分组密码算法的填充模式</a><br><a href="https://www.cnblogs.com/davidwang456/p/8386933.html" target="_blank" rel="noopener">分组密码的工作模式–wiki</a><br><a href="https://www.jianshu.com/p/dd5050c676d2" target="_blank" rel="noopener">DES/3DES算法 – 算法介绍</a><br><a href="https://www.jianshu.com/p/8c3657a1769f" target="_blank" rel="noopener">【易错概念】国密算法SM1（SCB2）、SM2、SM3、SM4、SM7、SM9、ZUC</a></p>
+</blockquote>
+
+      
+      <!-- reward -->
+      
+    </div>
+    
+    
+      <!-- copyright -->
+      
+    <footer class="article-footer">
+      
+          
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://supresu.github.io/2020/05/04/encrypt-algo/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8A%A0%E5%AF%86/" rel="tag">加密</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%AE%97%E6%B3%95/" rel="tag">算法</a></li></ul>
+
+
+    </footer>
+
+  </div>
+
+  
+  
+  <nav class="article-nav">
+    
+    
+      <a href="/2020/04/25/java11/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">JAVA 11</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+  
+<!-- valine评论 -->
+<div id="vcomments-box">
+    <div id="vcomments">
+    </div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/valine@1.3.10/dist/Valine.min.js'></script>
+<script>
+    new Valine({
+        el: '#vcomments',
+        app_id: '',
+        app_key: '',
+        path: window.location.pathname,
+        notify: 'false',
+        verify: 'false',
+        avatar: 'mp',
+        placeholder: '给我的文章加点评论吧~',
+        recordIP: true
+    });
+    const infoEle = document.querySelector('#vcomments .info');
+    if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+        infoEle.childNodes.forEach(function (item) {
+            item.parentNode.removeChild(item);
+        });
+    }
+</script>
+<style>
+    #vcomments-box {
+        padding: 5px 30px;
+    }
+
+    @media screen and (max-width: 800px) {
+        #vcomments-box {
+            padding: 5px 0px;
+        }
+    }
+
+    #vcomments-box #vcomments {
+        background-color: #fff;
+    }
+
+    .v .vlist .vcard .vh {
+        padding-right: 20px;
+    }
+
+    .v .vlist .vcard {
+        padding-left: 10px;
+    }
+</style>
+
+  
+
+  
+  
+  
+
+</article>
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul class="list-inline">
+      <li>
+        &copy;
+        2015-2020
+        SU Liangjian
+      </li>
+      <li>
+        
+        Powered by
+        
+        
+        <a href="https://hexo.io" target="_blank">Hexo</a> Theme <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul class="list-inline">
+      <li>
+        
+      </li>
+      
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="to_top">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+      </div>
+    </main>
+    <aside class="sidebar">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/zhazha.jpeg" alt="炸炸是个呼噜怪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/about_zhazha.html">关于炸炸</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/share.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+    onClick: (e) => {
+      $('.toc-link').removeClass('is-active-link');
+      $(`a[href=${e.target.hash}]`).addClass('is-active-link');
+      $(e.target.hash).scrollIntoView();
+      return false;
+    }
+  });
+</script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/js/ayer.js"></script>
+
+
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+
+
+<script type="text/javascript" src="https://js.users.51.la/20544303.js"></script>
+
+    
+  </div>
+</body>
+
+</html>
