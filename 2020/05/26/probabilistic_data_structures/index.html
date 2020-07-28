@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+    
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    浅析常用的概率数据结构（Probabilistic Data Structures） |  炸炸是个呼噜怪
+  </title>
+  <meta name="generator" content="hexo-theme-yilia-plus">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/css/main.css">
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+  
+
+  
+
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    <main class="content">
+      <section class="outer">
+  <article id="post-probabilistic_data_structures" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  浅析常用的概率数据结构（Probabilistic Data Structures）
+</h1>
+  
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2020/05/26/probabilistic_data_structures/" class="article-date">
+  <time datetime="2020-05-25T16:00:00.000Z" itemprop="datePublished">2020-05-26</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a>
+  </div>
+
+      
+      
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.9k字</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">14分钟</span>
+        </span>
+    </span>
+</div>
+
+      
+    </div>
+    
+
+    
+    
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+
+      
+      <p>概率数据结构（Probabilistic data structures）在大数据的场景中会经常被使用，其基本的思想是基于概率及数理统计相关的知识，在满足合适的空间及时间复杂度下得到一个可接受的近似答案，常见的概率数据结构有：<strong>Bloom filter</strong>、<strong>Count–min sketch</strong>、<strong>HyperLogLog</strong>、<strong>MinHash</strong>、<strong>SimHash</strong>等。</p>
+<a id="more"></a>
+
+<h2 id="Bloom-filter"><a href="#Bloom-filter" class="headerlink" title="Bloom filter"></a>Bloom filter</h2><p>布隆过滤器（Bloom Filter）是1970年由布隆提出的。它实际上是一个很长的 <code>二进制向量(位图)</code> 和一系列 <code>随机映射函数（哈希函数）</code>。布隆过滤器可以用于检索一个元素是否在一个集合中。它的优点是 <code>空间效率</code> 和 <code>查询时间</code> 都远远超过一般的算法，缺点是有一定的<code>误识别率</code>和 <code>删除困难</code>。</p>
+<blockquote>
+<p>基于布隆过滤器计算一个元素不存在则该元素一定不存在，但若是计算一个元素存在则该元素仅仅是可能存在</p>
+</blockquote>
+<h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><ul>
+<li><p>添加元素<br>当需要添加元素时，我们需要使用多个哈希函数进行运算生成不同的哈希值，且根据生成的哈希值将二进制数组对应的 bit 位置为 1。</p>
+<p>如下图，当插入字符串 “Bloom”时，对该字符串使用三种哈希函数进行计算所得到的哈希值分别为 1, 3, 7，则对应的 bit 位被设置为了 1：<br><img src="/images/bloom-filter-01.png" alt="Bloom Filter"></p>
+<p>当插入第二个字符串 “Filter”，同样，我们使用相同的哈希函数进行运算，假设哈希值分别为 2,4,7，那么二进制数组则会变为:<br><img src="/images/bloom-filter-02.png" alt="Bloom Filter"><br>因为在插入第一个字符串时，哈希值为 7 的 bit 位置已经被置为 1，因此不需要更改，只需要将 bit 位为 2, 4 置为 1 即可。</p>
+</li>
+<li><p>查询元素<br>查询某个元素是否存在，只需要使用相同的哈希函数进行运算，然后判断对应的 bit 位是否全部为 1，若是则元素可能存在，否则元素不存在。</p>
+<p>下图中，由于第二个哈希函数计算的哈希值对应第 5 bit，该 bit 的值 为 0，所以可以断定改元素一定不存在：<br><img src="/images/bloom-filter-03.png" alt="Bloom Filter"></p>
+<p>下图中，三个哈希函数计算的哈希值对应的 bit 全部为 1，可以认为元素是可能存在的：<br><img src="/images/bloom-filter-04.png" alt="Bloom Filter"></p>
+</li>
+</ul>
+<h3 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h3><ul>
+<li><p>自己实现<br>算法原理很简单，不过需要自己考虑哈希函数的选型和评估误判率</p>
+</li>
+<li><p>Guava<br>通过调用 <a href="https://github.com/google/guava/blob/master/android/guava/src/com/google/common/hash/BloomFilter.java" target="_blank" rel="noopener"><code>BloomFilter</code></a> 类中的静态函数创建， 传递一个 Funnel 对象以及一个代表预期插入数量整数。同样来自于 Guava 11 中的 Funnel 对象，用于将数据发送给一个接收器（Sink）。 下面的例子是一个默认的实现，有着 3% 的误报率。<br>Guava 提供的 <a href="https://github.com/google/guava/blob/master/android/guava/src/com/google/common/hash/Funnels.java" target="_blank" rel="noopener">Funnels</a> 类拥有 5 个静态方法（byteArrayFunnel、unencodedCharsFunnel、stringFunnel、integerFunnel、longFunnel）提供了将 byte 数组、CharSequence、Integer、Long 插入到过滤器的 Funnel 接口的实现。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Creating the BloomFilter</span></span><br><span class="line">BloomFilter bloomFilter = BloomFilter.create(Funnels.byteArrayFunnel(), <span class="number">1000</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// Putting elements into the filter</span></span><br><span class="line"><span class="comment">// A BigInteger representing a key of some sort</span></span><br><span class="line">bloomFilter.put(bigInteger.toByteArray());</span><br><span class="line"></span><br><span class="line"><span class="comment">// Testing for element in set</span></span><br><span class="line"><span class="keyword">boolean</span> mayBeContained = bloomFilter.mayContain(bitIntegerII.toByteArray());</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>redis<br>redis 在 4.0 版本以后可通过插件的形式添加布隆过滤器，添加插件的方式见：<a href="https://github.com/RedisBloom/RedisBloom" target="_blank" rel="noopener">RedisBloom</a>，使用方法如下：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Create a new bloom filter by adding a new item:</span></span><br><span class="line">&gt; BF.ADD newFilter foo</span><br><span class="line">(<span class="built_in">integer</span>) 1</span><br><span class="line"></span><br><span class="line"><span class="comment"># Find out whether an item exists in the filter:</span></span><br><span class="line">&gt; BF.EXISTS newFilter foo</span><br><span class="line">(<span class="built_in">integer</span>) 1</span><br><span class="line"></span><br><span class="line">&gt; BF.EXISTS newFilter bar</span><br><span class="line">(<span class="built_in">integer</span>) 0</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ul>
+<h3 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h3><p>标准的 Bloom Filter 是一种比较简单的数据结构，只支持插入和查找两种操作，若需要删除操作则可以使用 <code>Counting Bloom Filter</code>，其原理可以参见：<a href="https://cloud.tencent.com/developer/article/1136056" target="_blank" rel="noopener">Counting Bloom Filter 的原理和实现</a>。</p>
+<hr>
+<h2 id="Count–min-sketch"><a href="#Count–min-sketch" class="headerlink" title="Count–min sketch"></a>Count–min sketch</h2><p>Count–min sketch 用作数据流中事件的频率表，可以随时计算出数据流中某个元素出现的频率，该数据结构在一些高性能的 LFU 算法中有着重要的应用，如：<a href="https://arxiv.org/pdf/1512.00727.pdf" target="_blank" rel="noopener">W-TinyLFU</a> 等。</p>
+<h3 id="原理-1"><a href="#原理-1" class="headerlink" title="原理"></a>原理</h3><p>Count–min sketch 的内部数据结构是一个二维数组 $count$，宽度 $w$，深度 $d$，此外还需要 $d$ 个两两独立的哈希函数 $h_1…h_d$，更新的时候，用这些哈希函数算出 $d$ 个不同的哈希值，然后把对应的行的值加上 $c$。<br><img src="/images/countmin-sketch-01.png" alt="Count–min sketch"></p>
+<blockquote>
+<p>这里取值是有讲究的：$w = \lceil \frac{e}{ε} \rceil$，$d = \lceil ln\frac{1}{δ} \rceil$，其中 $ε$ 和 $δ$ 表示在 $1 - δ$ 的概率下，总误差（所有元素查询误差的之和）小于 $ε$ 。</p>
+</blockquote>
+<p>当要查询某个元素的频率时，返回这个元素在不同哈希函数中的计数值中的最小值即可。</p>
+<hr>
+<h2 id="HyperLogLog"><a href="#HyperLogLog" class="headerlink" title="HyperLogLog"></a>HyperLogLog</h2><p>HyperLogLog 主要用于基数计数(cardinality counting)，即统计一个集合中不重复的元素个数，其特点是可以用非常小的空间对大量的数据进行基数计数。</p>
+<p>举个例子，我们知道 bitmap 空间的利用率已经很高了，如果要统计 1 亿个数据的基数值，大约需要内存： $100000000/8/1024/1024 \approx 12M$，而 HyperLogLog 只需要不到 1K 内存就能做到。</p>
+<p>当然要达到如此神奇结果还是需要代价的，HyperLogLog 统计的数据会有一定的误差，一般来说基数统计的误差越小，需要的内存空间也越大。</p>
+<h3 id="原理-2"><a href="#原理-2" class="headerlink" title="原理"></a>原理</h3><p>HyperLogLog 实现原理基于 $n$ 次伯努利过程，想读懂算法的原理需要一定的概率论基础，感兴趣的同学可以阅读 《<a href="http://www.rainybowe.com/blog/2017/07/13/%E7%A5%9E%E5%A5%87%E7%9A%84HyperLogLog%E7%AE%97%E6%B3%95/index.html" target="_blank" rel="noopener">神奇的HyperLogLog算法</a>》 进一步学习，国外也有大牛通过动画方式 <a href="http://content.research.neustar.biz/blog/hll.html" target="_blank" rel="noopener">HLL Demo</a> 详细展示了 HyperLogLog 的计算过程。</p>
+<h3 id="实现-1"><a href="#实现-1" class="headerlink" title="实现"></a>实现</h3><ul>
+<li><p>redis<br>redis 在 2.8.9 版本后原生实现了 HyperLogLog，只需要 12K 内存，在标准误差 0.81% 的前提下，能够统计 $2^{64}$​​ 个数据。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&gt; PFADD runoobkey <span class="string">"redis"</span></span><br><span class="line">(<span class="built_in">integer</span>) 1</span><br><span class="line"></span><br><span class="line">&gt; PFADD runoobkey <span class="string">"mongodb"</span></span><br><span class="line">(<span class="built_in">integer</span>) 1</span><br><span class="line"></span><br><span class="line">&gt; PFADD runoobkey <span class="string">"mysql"</span></span><br><span class="line">(<span class="built_in">integer</span>) 1</span><br><span class="line"></span><br><span class="line">&gt; PFCOUNT runoobkey</span><br><span class="line">(<span class="built_in">integer</span>) 3</span><br></pre></td></tr></table></figure></li>
+<li><p>druid<br>作为一个实时 OLAP 框架，druid 也使用 HyperLogLog 评估基数，一般有两种选择：</p>
+<ul>
+<li>Cardinality aggregator：只在查询时优化，不减少存储容量，效率比存储时预聚合的 HyperUnique aggregator 低<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">"type"</span>: <span class="string">"cardinality"</span>,</span><br><span class="line">  <span class="string">"name"</span>: <span class="string">"&lt;output_name&gt;"</span>,</span><br><span class="line">  <span class="string">"fields"</span>: [ &lt;dimension1&gt;, &lt;dimension2&gt;, ... ],</span><br><span class="line">  <span class="string">"byRow"</span>: &lt;<span class="literal">false</span> | <span class="literal">true</span>&gt; <span class="comment"># (optional, defaults to false),</span></span><br><span class="line">  <span class="string">"round"</span>: &lt;<span class="literal">false</span> | <span class="literal">true</span>&gt; <span class="comment"># (optional, defaults to false)</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>HyperUnique aggregator：在摄取时进行预计算，效率更高<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">"type"</span> : <span class="string">"hyperUnique"</span>,</span><br><span class="line">  <span class="string">"name"</span> : &lt;output_name&gt;,</span><br><span class="line">  <span class="string">"fieldName"</span> : &lt;metric_name&gt;,</span><br><span class="line">  <span class="string">"isInputHyperUnique"</span> : <span class="literal">false</span>,</span><br><span class="line">  <span class="string">"round"</span> : <span class="literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>详情可移步<a href="http://druid.apache.org/docs/latest/querying/hll-old.html" target="_blank" rel="noopener">官网</a></p>
+</li>
+</ul>
+<hr>
+<h2 id="MinHash"><a href="#MinHash" class="headerlink" title="MinHash"></a>MinHash</h2><p>在数据挖掘中，一个最基本的问题就是比较两个集合的相似度。通常通过遍历这两个集合中的所有元素，统计这两个集合中相同元素的个数，来表示集合的相似度；这一步也可以看成特征向量间相似度的计算（欧氏距离，余弦相似度）。当这两个集合里的元素数量异常大（特征空间维数很大），同时又有很多个集合需要判断两两间的相似度时，传统方法会变得十分耗时，MinHash 可以用来解决该问题。</p>
+<h3 id="原理-3"><a href="#原理-3" class="headerlink" title="原理"></a>原理</h3><ul>
+<li><p>Jaccard 相似度<br><strong>Jaccard 相似度</strong> 是用来描述两个集合间的相似度的，假设有两个集合A、B，其计算公式如下：<br>$$Jaccard(A, B) = \frac{A \cap B}{A \cup B}$$<br>该公式表示 A 与 B 交集的元素个数除以 A 与 B 并集的元素个数。</p>
+</li>
+<li><p>k-Shingle<br>假如把一整篇文章看成一个长的字符串，那么 <strong>k-shingle</strong> 就是这篇文档中长度为 $k$ 的任意字符子串。</p>
+<blockquote>
+<p>例如：现在有一篇很短的文章，内容为 abcdabd，令 $k = 2$，那么这篇文章中所有的 2-shingle 组成的集合为 {ab,bc,cd,da,bd}。</p>
+</blockquote>
+<p>当 $k$ 的选择较小时，可以推测大部分长度为 $k$ 的字符串会出现在大部分的文档中，最终导致有很多 Jaccard 相似度很高的文档。比如在极端情况下 $k = 1$，大部分文档中都有很常见的字符，而其它字符相对较少，因此，几乎所有的 web 网页之间都有较高的 Jaccard 相似度。</p>
+<p>$k$ 值的选择依赖于文档的典型长度以及典型的字符表大小，一般来说，$k$ 应该选择得足够大，以保证任意给定的 shingle 出现在任意文档中的概率最低。这里其实已经发现一个问题，<code>k-Shingle 会占用较大的内存空间</code>。</p>
+<blockquote>
+<p>假设 $k = 4$，那么每个 shingle 中就会有 4 个字符，存在内存中就至少需要 4 个字节，以这种方式存下一篇文章的所有 shingle，需要的内存空间大概是原文档大小的 4 倍。</p>
+</blockquote>
+</li>
+<li><p>特征向量<br>原始的 shingle 集合不利于计算机去分析，所以需要把集合替换成规模小很多的 “<strong>特征</strong>“ 集合（one-hot 编码），这样就可以通过比较两篇文章的特征集合的相似度，就能够估计 shingle 集合的相似度。</p>
+<p><strong>特征向量</strong> 一列就对应一个集合，所有的行加起来就是所有集合元素的全集，如果集合中有某个元素，则矩阵中的对应位置为 1，否则为 0。</p>
+<blockquote>
+<p>假设现在有 4 个集合：$S_1$，$S_2$，$S_3$，$S_4$，其中：$S_1 =  \left \{a, d \right \}$, $S_2 = \left \{c \right \}$, $S_3 = \left \{b, d, e \right \}$, $S_4 = \left \{a, c, d \right \}$，全集为：$U = \left \{a, b, c, d, e \right \}$，则 4 个集合的特征向量为：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>$S_1$</th>
+<th>$S_2$</th>
+<th>$S_3$</th>
+<th>$S_4$</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>a</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>b</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>c</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>d</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>e</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+</tbody></table>
+</blockquote>
+</li>
+<li><p>最小哈希函数<br>对海量文本而言，K-shingle 算法得到的特征向量是超高维的，导致该算法非常巨大的时间复杂度和空间复杂度。Minhash 算法设计了一种最小哈希函数，将原始超高维的稀疏向量转化为低维的稠密向量，降低了计算的空间复杂度。同时，对转换后的稠密向量进行分段索引，缩小潜在相似文本范围，降低了计算的时间复杂度。</p>
+<p><strong>最小哈希函数</strong>：对一个列向量按行进行随机排列，重排后第一个非零元素的行号就是最小哈希函数值。直观上来说，<strong><code>如果两个文本完全重复，那么不论如何重排，两个文本对应的最小哈希函数值都应该是一样的</code></strong>。</p>
+<blockquote>
+<p>例如对原特征向量进行一次按行重排后得到的矩阵实例如下：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>$S_1$</th>
+<th>$S_2$</th>
+<th>$S_3$</th>
+<th>$S_4$</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>b</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>e</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>a</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>d</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>c</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+</tbody></table>
+</blockquote>
+<blockquote>
+<p>对于列 $S_1$，从这一列的第一行往下走，直到遇到第一个 1，所在的行号则为这一列的最小哈希值，即：$h_{min}(S_1) = 2$，其它列最小哈希依次为 $h_{min}(S_2) = 4$，$h_{min}(S_3) = 0$，$h_{min}(S_4) = 2$</p>
+</blockquote>
+<p>上述的按行重排会重复 $N$ 次，最终会得到一个 $N$ 维的 Minhash 特征向量。</p>
+<p>当一个特征向量很大时（假设有上亿行），那么对其进行行打乱是非常耗时，更要命的是还要进行多次行打乱，为了解决这个问题，可以通过一些<code>随机哈希函数</code>来模拟行打乱的效果。具体做法如下（假设有 $M$ 个集合，上面的例子中 $M$ = 4）:</p>
+<ul>
+<li>选择 $N$ 个随机哈希函数，假设为：$h_1$、$h_2$ … $h_n$</li>
+<li>初始一个 $N$ 行（每一行对应一个随机哈希函数）$ M$ 列的最小哈希特征向量，值全部为 $inf$（无穷大），即：<table>
+<thead>
+<tr>
+<th></th>
+<th>$S_1$</th>
+<th>…</th>
+<th>$S_i$</th>
+<th>…</th>
+<th>$S_M$</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$h_1$</td>
+<td>inf</td>
+<td></td>
+<td>inf</td>
+<td></td>
+<td>inf</td>
+</tr>
+<tr>
+<td>…</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>$h_j$</td>
+<td>inf</td>
+<td></td>
+<td>inf</td>
+<td></td>
+<td>inf</td>
+</tr>
+<tr>
+<td>…</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>$h_N$</td>
+<td>inf</td>
+<td></td>
+<td>inf</td>
+<td></td>
+<td>inf</td>
+</tr>
+</tbody></table>
+</li>
+<li>遍历原特征向量每一行，当第 $x$ 行 $y$ 列值为 0 时，跳过；值为 1 时，分别计算 $h_1(x)$、$h_2(x)$ … $h_N(x)$，将计算的 $N$ 个哈希值和最小哈希特征向量矩阵的第 $y$ 列原始值比较，如果哈希值小则替换原来值，否则保持原来值不变。</li>
+</ul>
+</li>
+</ul>
+<h3 id="实现-2"><a href="#实现-2" class="headerlink" title="实现"></a>实现</h3><ul>
+<li>Java 版本 <a href="https://github.com/codelibs/minhash" target="_blank" rel="noopener">minhash</a></li>
+<li>Python 版本 <a href="https://github.com/ekzhu/datasketch" target="_blank" rel="noopener">datasketch</a></li>
+</ul>
+<hr>
+<h2 id="SimHash"><a href="#SimHash" class="headerlink" title="SimHash"></a>SimHash</h2><p>SimHash 是 google 用来处理海量文本去重的算法。SimHash 可以将一个文档转换成一个 64 位的字节，暂且称之为 <strong>特征值</strong>，然后判断重复只需要判断他们的特征值的距离是不是 &lt; n（根据经验这个 n 一般取值为 3），就可以判断两个文档是否相似。</p>
+<h3 id="原理-4"><a href="#原理-4" class="headerlink" title="原理"></a>原理</h3><p>SimHash 特征值的生成图解如下：<br><img src="/images/simhash.jpg" alt="SimHash"><br>大致的计算流程为：</p>
+<ul>
+<li>将 Doc 进行关键词抽取(其中包括分词和计算权重)，抽取出 $n$ 个（feature，weight）对，记为：<br>$$feature\_weight\_pairs = [fw_1, fw_2, … , fw_n]$$<br>其中：$fw_i = (feature_i,weight_i)$</li>
+<li>计算每个 feature 的哈希值，记为 ${H_f}_i = hash(feature_i)$，此时假设哈希函数生成的位数 $bits\_count = 6$<br>$$hash\_weight\_pairs =\begin{bmatrix}<br>({H_f}_1, weight_1), \\<br>({H_f}_2, weight_2), \\<br>… \\<br>({H_f}_n, weight_n)<br>\end{bmatrix}$$</li>
+<li>然后对 $hash\_weight\_pairs$ 进行位的纵向累加，如果该位是 1，则 +weight，如果是 0，则 -weight，最后生成 $bits\_count$ 个数字，如图所示是 [13, 108, -22, -5, -32, 55]</li>
+<li>[13,108,-22,-5,-32,55] -&gt; 110001，即正 1 负 0</li>
+</ul>
+<p>上图展示了计算文本特征值的计算方法，当判断两个文本是否相似还需要计算特征值的距离，一般采用的计算方法为计算它们的 <a href="https://blog.csdn.net/lskyne/article/details/8652404" target="_blank" rel="noopener">汉明距离</a>（Hamming distanc），这里不在具体阐述了。</p>
+<h3 id="实现-3"><a href="#实现-3" class="headerlink" title="实现"></a>实现</h3><ul>
+<li>C++ 版本 <a href="https://github.com/yanyiwu/simhash" target="_blank" rel="noopener">simhash</a></li>
+<li>Golang 版本 <a href="https://github.com/yanyiwu/gosimhash" target="_blank" rel="noopener">gosimhash</a></li>
+<li>Java 版本 <a href="https://github.com/xlturing/Simhash4J" target="_blank" rel="noopener">Simhash4J</a></li>
+</ul>
+<h3 id="和-Minhash-对比"><a href="#和-Minhash-对比" class="headerlink" title="和 Minhash 对比"></a>和 Minhash 对比</h3><table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>Minhash</th>
+<th>Simhash</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>清洗文本</td>
+<td>去标点、空格、特殊字符等</td>
+<td>去标点、空格、特殊字符等</td>
+</tr>
+<tr>
+<td>分隔词组</td>
+<td>指定长度的滑动窗口取 Shingle 作为词组</td>
+<td>分词结果作为词组</td>
+</tr>
+<tr>
+<td>分隔词库</td>
+<td>所有文本的互异词组的集合构成词库</td>
+<td>无</td>
+</tr>
+<tr>
+<td>提取特征值</td>
+<td>基于词库计算文本的 one-hot 编码，再对文本的 one-hot 编码向量随机排列，取首个非零元素的下标，重复 N 次，得到 N 维向量作为文本特征</td>
+<td>统计各词组词频，将各词组哈希为指定长度的01向量，将 0 改为 -1，按位与对应的词频相乘，再将所有词组的相乘结果按位相加，大于 0 映射为 1，否则映射为 0，得到的 01 向量作为文本特征</td>
+</tr>
+<tr>
+<td>建立索引</td>
+<td>将文本特征值分段，已各段为索引，指向具有该特征的文本 ID</td>
+<td>将文本特征值分段，已各段为索引，指向具有该特征的文本 ID</td>
+</tr>
+<tr>
+<td>生成候选</td>
+<td>至少具有同一段相同特征的文本对作为候选</td>
+<td>至少具有同一段相同特征的文本对作为候选</td>
+</tr>
+<tr>
+<td>计算距离</td>
+<td>计算后端文本对的同位元素相等概率，大于阈值认为是重复文本对</td>
+<td>计算文本对的汉明距离，小于阈值认为是重复文本对</td>
+</tr>
+</tbody></table>
+<ul>
+<li>运行速度：Simhash &gt; Minhash</li>
+<li>准确率：Minhash &gt; Simhash</li>
+<li>召回率：Simhash &gt; Minhash</li>
+</ul>
+<p>工程应用上，海量文本用 Simhash，短文本用 Minhash</p>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><blockquote>
+<p><a href="https://en.wikipedia.org/wiki/Category:Probabilistic_data_structures" target="_blank" rel="noopener">Probabilistic data structures</a><br><a href="https://zhuanlan.zhihu.com/p/72378274" target="_blank" rel="noopener">数学之美：布隆过滤器</a><br><a href="https://cloud.tencent.com/developer/article/1136056" target="_blank" rel="noopener">Counting Bloom Filter 的原理和实现</a><br><a href="https://www.cnblogs.com/cbkj-xd/p/12863619.html" target="_blank" rel="noopener">布隆过滤器(Bloom Filter)</a><br><a href="https://www.oschina.net/translate/guava-bloomfilter?print" target="_blank" rel="noopener">Google Guava 中的布隆过滤</a><br><a href="https://zhuanlan.zhihu.com/p/84688298" target="_blank" rel="noopener">Count-Min Sketch</a><br><a href="http://www.rainybowe.com/blog/2017/07/13/%E7%A5%9E%E5%A5%87%E7%9A%84HyperLogLog%E7%AE%97%E6%B3%95/index.html" target="_blank" rel="noopener">神奇的HyperLogLog算法</a><br><a href="https://www.jianshu.com/p/535c537a5766" target="_blank" rel="noopener">2018-11-15-MinHash原理</a><br><a href="http://yanyiwu.com/work/2014/01/30/simhash-shi-xian-xiang-jie.html" target="_blank" rel="noopener">simhash算法原理及实现</a><br><a href="https://zhuanlan.zhihu.com/p/43640234" target="_blank" rel="noopener">文本去重算法：Minhash/Simhash/Klongsent</a><br><a href="https://www.cnblogs.com/bourneli/archive/2013/04/04/2999767.html" target="_blank" rel="noopener">利用Minhash和LSH寻找相似的集合</a></p>
+</blockquote>
+
+      
+      <!-- reward -->
+      
+    </div>
+    
+    
+      <!-- copyright -->
+      
+    <footer class="article-footer">
+      
+          
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://supresu.github.io/2020/05/26/probabilistic_data_structures/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" rel="tag">数据结构</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A6%82%E7%8E%87/" rel="tag">概率</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%AE%97%E6%B3%95/" rel="tag">算法</a></li></ul>
+
+
+    </footer>
+
+  </div>
+
+  
+  
+  <nav class="article-nav">
+    
+      <a href="/2020/06/27/java-ann-contended/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            你可能不了解的 Java 知识之 @Contended
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2020/05/04/encrypt-algo/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">工作中常用的加密算法介绍</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+  
+<!-- valine评论 -->
+<div id="vcomments-box">
+    <div id="vcomments">
+    </div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/valine@1.3.10/dist/Valine.min.js'></script>
+<script>
+    new Valine({
+        el: '#vcomments',
+        app_id: '',
+        app_key: '',
+        path: window.location.pathname,
+        notify: 'false',
+        verify: 'false',
+        avatar: 'mp',
+        placeholder: '给我的文章加点评论吧~',
+        recordIP: true
+    });
+    const infoEle = document.querySelector('#vcomments .info');
+    if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+        infoEle.childNodes.forEach(function (item) {
+            item.parentNode.removeChild(item);
+        });
+    }
+</script>
+<style>
+    #vcomments-box {
+        padding: 5px 30px;
+    }
+
+    @media screen and (max-width: 800px) {
+        #vcomments-box {
+            padding: 5px 0px;
+        }
+    }
+
+    #vcomments-box #vcomments {
+        background-color: #fff;
+    }
+
+    .v .vlist .vcard .vh {
+        padding-right: 20px;
+    }
+
+    .v .vlist .vcard {
+        padding-left: 10px;
+    }
+</style>
+
+  
+
+  
+  
+  
+
+</article>
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul class="list-inline">
+      <li>
+        &copy;
+        2015-2020
+        SU Liangjian
+      </li>
+      <li>
+        
+        Powered by
+        
+        
+        <a href="https://hexo.io" target="_blank">Hexo</a> Theme <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul class="list-inline">
+      <li>
+        
+      </li>
+      
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="to_top">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+      </div>
+    </main>
+    <aside class="sidebar">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/zhazha.jpeg" alt="炸炸是个呼噜怪"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/about_zhazha.html">关于炸炸</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/share.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+    onClick: (e) => {
+      $('.toc-link').removeClass('is-active-link');
+      $(`a[href=${e.target.hash}]`).addClass('is-active-link');
+      $(e.target.hash).scrollIntoView();
+      return false;
+    }
+  });
+</script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/js/ayer.js"></script>
+
+
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+
+
+<script type="text/javascript" src="https://js.users.51.la/20544303.js"></script>
+
+    
+  </div>
+</body>
+
+</html>
